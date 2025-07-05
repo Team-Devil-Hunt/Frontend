@@ -1,0 +1,436 @@
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Search, Book, FileText, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import AssignmentSubmissionModal from '../../components/assignments/AssignmentSubmissionModal';
+import AssignmentDetailsModal from '../../components/assignments/AssignmentDetailsModal';
+
+// Mock data for assignments
+const mockAssignments = [
+  {
+    id: '1',
+    title: 'Algorithm Analysis Report',
+    course: 'CSE-301: Design and Analysis of Algorithms',
+    description: 'Analyze the time and space complexity of the provided algorithms and submit a detailed report.',
+    deadline: '2025-07-10T23:59:00',
+    assignedDate: '2025-07-01T10:00:00',
+    status: 'upcoming',
+    submissionType: 'document',
+    maxMarks: 20,
+    attachments: ['algorithm_problems.pdf'],
+    submissionDetails: null
+  },
+  {
+    id: '2',
+    title: 'Database Schema Design',
+    course: 'CSE-303: Database Systems',
+    description: 'Design a comprehensive database schema for the university management system described in the requirements.',
+    deadline: '2025-07-15T23:59:00',
+    assignedDate: '2025-07-03T14:00:00',
+    status: 'upcoming',
+    submissionType: 'document',
+    maxMarks: 15,
+    attachments: ['db_requirements.pdf'],
+    submissionDetails: null
+  },
+  {
+    id: '3',
+    title: 'Machine Learning Model Implementation',
+    course: 'CSE-401: Artificial Intelligence',
+    description: 'Implement and train a neural network model for the given classification problem.',
+    deadline: '2025-07-08T23:59:00',
+    assignedDate: '2025-06-25T09:00:00',
+    status: 'submitted',
+    submissionType: 'code',
+    maxMarks: 25,
+    attachments: ['dataset.csv', 'problem_statement.pdf'],
+    submissionDetails: {
+      submittedDate: '2025-07-05T14:30:00',
+      files: ['model.py', 'report.pdf'],
+      grade: null,
+      feedback: null,
+      status: 'submitted'
+    }
+  },
+  {
+    id: '4',
+    title: 'Operating System Simulation',
+    course: 'CSE-307: Operating Systems',
+    description: 'Implement a simulation of CPU scheduling algorithms and compare their performance.',
+    deadline: '2025-06-30T23:59:00',
+    assignedDate: '2025-06-15T11:00:00',
+    status: 'past',
+    submissionType: 'code',
+    maxMarks: 20,
+    attachments: ['simulation_requirements.pdf'],
+    submissionDetails: null
+  },
+  {
+    id: '5',
+    title: 'Computer Networks Lab Report',
+    course: 'CSE-407: Computer Networks',
+    description: 'Document and analyze the results of the network protocols lab experiments.',
+    deadline: '2025-07-12T23:59:00',
+    assignedDate: '2025-07-02T13:00:00',
+    status: 'upcoming',
+    submissionType: 'document',
+    maxMarks: 15,
+    attachments: ['lab_manual.pdf'],
+    submissionDetails: null
+  },
+  {
+    id: '6',
+    title: 'Software Engineering Project Proposal',
+    course: 'CSE-405: Software Engineering',
+    description: 'Prepare a detailed project proposal including requirements analysis, design specifications, and implementation plan.',
+    deadline: '2025-07-20T23:59:00',
+    assignedDate: '2025-07-05T10:00:00',
+    status: 'upcoming',
+    submissionType: 'document',
+    maxMarks: 30,
+    attachments: ['proposal_template.docx'],
+    submissionDetails: null
+  },
+  {
+    id: '7',
+    title: 'Web Development Project',
+    course: 'CSE-309: Web Technologies',
+    description: 'Develop a responsive web application according to the provided specifications.',
+    deadline: '2025-07-05T23:59:00',
+    assignedDate: '2025-06-20T09:00:00',
+    status: 'submitted',
+    submissionType: 'code',
+    maxMarks: 40,
+    attachments: ['project_requirements.pdf'],
+    submissionDetails: {
+      submittedDate: '2025-07-04T22:45:00',
+      files: ['source_code.zip', 'documentation.pdf', 'demo_link.txt'],
+      grade: 36,
+      feedback: 'Excellent work! The application meets all requirements and has a clean, intuitive UI.',
+      status: 'graded'
+    }
+  },
+  {
+    id: '8',
+    title: 'Computer Graphics Assignment',
+    course: 'CSE-403: Computer Graphics',
+    description: 'Implement the specified 3D rendering algorithms and create visual demonstrations.',
+    deadline: '2025-06-28T23:59:00',
+    assignedDate: '2025-06-10T14:00:00',
+    status: 'past',
+    submissionType: 'code',
+    maxMarks: 25,
+    attachments: ['graphics_assignment.pdf'],
+    submissionDetails: null
+  }
+];
+
+const StudentAssignments = () => {
+  const [activeTab, setActiveTab] = useState('upcoming');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  
+  // Filter assignments based on active tab and search query
+  const filteredAssignments = useMemo(() => {
+    return mockAssignments.filter(assignment => {
+      // Filter by tab
+      if (activeTab !== 'all' && assignment.status !== activeTab) {
+        return false;
+      }
+      
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          assignment.title.toLowerCase().includes(query) ||
+          assignment.course.toLowerCase().includes(query) ||
+          assignment.description.toLowerCase().includes(query)
+        );
+      }
+      
+      return true;
+    });
+  }, [activeTab, searchQuery]);
+  
+  // Format date for display
+  const formatDate = (dateString) => {
+    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+  
+  // Calculate time remaining until deadline
+  const getTimeRemaining = (deadline) => {
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const diffMs = deadlineDate - now;
+    
+    if (diffMs <= 0) {
+      return { text: 'Past due', color: 'text-red-600' };
+    }
+    
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (diffDays > 0) {
+      return { 
+        text: `${diffDays} day${diffDays > 1 ? 's' : ''} ${diffHours} hr${diffHours > 1 ? 's' : ''} left`, 
+        color: diffDays < 2 ? 'text-amber-600' : 'text-green-600'
+      };
+    } else {
+      return { 
+        text: `${diffHours} hour${diffHours > 1 ? 's' : ''} left`, 
+        color: 'text-red-600'
+      };
+    }
+  };
+  
+  // Handle assignment submission
+  const handleSubmitAssignment = (assignment) => {
+    setSelectedAssignment(assignment);
+    setIsSubmitModalOpen(true);
+  };
+  
+  // Handle view assignment details
+  const handleViewAssignment = (assignment) => {
+    setSelectedAssignment(assignment);
+    setIsDetailsModalOpen(true);
+  };
+  
+  // Handle assignment submission
+  const handleSubmissionComplete = (assignmentId, submissionData) => {
+    // In a real app, this would update the backend
+    // For now, we'll update our local state
+    const updatedAssignments = mockAssignments.map(assignment => {
+      if (assignment.id === assignmentId) {
+        return {
+          ...assignment,
+          status: 'submitted',
+          submissionDetails: submissionData
+        };
+      }
+      return assignment;
+    });
+    
+    // This would normally be handled by a state management solution
+    // For demo purposes, we're just updating the UI
+    setTimeout(() => {
+      setActiveTab('submitted');
+    }, 2500);
+  };
+  
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  
+  return (
+    <div className="p-4 md:p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Assignments</h1>
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search assignments..."
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          </div>
+        </div>
+      </div>
+      
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button
+          className={`px-4 py-2 font-medium text-sm ${
+            activeTab === 'upcoming'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => setActiveTab('upcoming')}
+        >
+          Upcoming
+        </button>
+        <button
+          className={`px-4 py-2 font-medium text-sm ${
+            activeTab === 'submitted'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => setActiveTab('submitted')}
+        >
+          Submitted
+        </button>
+        <button
+          className={`px-4 py-2 font-medium text-sm ${
+            activeTab === 'past'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => setActiveTab('past')}
+        >
+          Past Due
+        </button>
+        <button
+          className={`px-4 py-2 font-medium text-sm ${
+            activeTab === 'all'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => setActiveTab('all')}
+        >
+          All Assignments
+        </button>
+      </div>
+      
+      {/* Assignment Cards */}
+      {filteredAssignments.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {filteredAssignments.map((assignment) => {
+            const timeRemaining = getTimeRemaining(assignment.deadline);
+            
+            return (
+              <motion.div
+                key={assignment.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white rounded-lg overflow-hidden shadow-md border border-gray-200 hover:shadow-lg transition-shadow"
+              >
+                {/* Header */}
+                <div className={`p-4 ${assignment.status === 'submitted' ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : assignment.status === 'past' ? 'bg-gradient-to-r from-red-500 to-pink-600' : 'bg-gradient-to-r from-violet-500 to-purple-600'}`}>
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-bold text-white">{assignment.title}</h3>
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${assignment.status === 'submitted' ? 'bg-blue-100 text-blue-800' : assignment.status === 'past' ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'}`}>
+                      {assignment.status === 'submitted' ? 'Submitted' : assignment.status === 'past' ? 'Past Due' : 'Upcoming'}
+                    </div>
+                  </div>
+                  <p className="text-white/80 text-sm mt-1">{assignment.course}</p>
+                </div>
+                
+                {/* Content */}
+                <div className="p-4">
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 line-clamp-2">{assignment.description}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                      <span className="text-xs text-gray-600">Due: {formatDate(assignment.deadline)}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                      <span className="text-xs text-gray-600">Assigned: {formatDate(assignment.assignedDate)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Time Remaining */}
+                  <div className="mb-3">
+                    <p className={`text-sm font-medium ${timeRemaining.color}`}>
+                      {assignment.status === 'submitted' ? (
+                        <span className="flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                          Submitted on {formatDate(assignment.submissionDetails?.submittedDate)}
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          {assignment.status === 'past' ? (
+                            <XCircle className="h-4 w-4 mr-1 text-red-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 mr-1 text-amber-500" />
+                          )}
+                          {timeRemaining.text}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Attachments */}
+                  {assignment.attachments && assignment.attachments.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Attachments:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {assignment.attachments.map((attachment, index) => (
+                          <div 
+                            key={index} 
+                            className="px-2 py-1 bg-gray-100 rounded text-xs flex items-center hover:bg-gray-200 cursor-pointer transition-colors"
+                          >
+                            <FileText className="h-3 w-3 mr-1 text-gray-500" />
+                            {attachment}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Submission Details */}
+                  {assignment.submissionDetails?.grade !== undefined && (
+                    <div className="mb-3 p-2 bg-blue-50 rounded-md">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-blue-800">Grade:</span>
+                        <span className="text-sm font-bold text-blue-800">{assignment.submissionDetails.grade}/{assignment.maxMarks}</span>
+                      </div>
+                      {assignment.submissionDetails.feedback && (
+                        <p className="text-xs text-blue-700 mt-1">{assignment.submissionDetails.feedback}</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Actions */}
+                  <div className="mt-4 flex justify-between">
+                    <button 
+                      onClick={() => handleViewAssignment(assignment)}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors flex items-center"
+                    >
+                      <Book className="h-4 w-4 mr-1" />
+                      View Details
+                    </button>
+                    
+                    {assignment.status !== 'past' && (
+                      <button 
+                        onClick={() => handleSubmitAssignment(assignment)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center ${assignment.status === 'submitted' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        {assignment.status === 'submitted' ? 'Update Submission' : 'Submit Assignment'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+            <AlertCircle className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
+          <p className="text-gray-500">
+            {activeTab === 'all' ? 
+              'There are no assignments matching your search criteria.' : 
+              `You don't have any ${activeTab} assignments.`}
+          </p>
+        </div>
+      )}
+      
+      {/* Assignment Details Modal */}
+      <AssignmentDetailsModal 
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        assignment={selectedAssignment}
+      />
+      
+      {/* Assignment Submission Modal */}
+      <AssignmentSubmissionModal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+        assignment={selectedAssignment}
+        onSubmit={handleSubmissionComplete}
+      />
+    </div>
+  );
+};
+
+export default StudentAssignments;

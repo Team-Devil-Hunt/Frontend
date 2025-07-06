@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock, LogIn, BookOpen, Users } from 'lucide-react';
 import cseduLogo from '../assets/csedu_logo.png'
+import Api from '../constant/Api';
+import {toast} from 'react-hot-toast';
+import { useGlobalState } from '../context/GlobalStateProvider';
 
 /*
 API Schema:
@@ -28,6 +31,8 @@ Response: {
 */
 
 const Login = () => {
+
+  const { globalState, setGlobalState } = useGlobalState();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -49,23 +54,35 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
+  
     try {
-      // Mock API call - will be replaced with actual API call later
-      // For now, just redirect based on role
-      setTimeout(() => {
-        setIsLoading(false);
-        if (formData.role === 'student') {
-          navigate('/student/dashboard');
-        } else {
-          navigate('/faculty/dashboard');
-        }
-      }, 1000);
+      const response = await Api.post('/api/auth/login', formData);
+      console.log(response.data);
+      console.log(response.data.message);
+      if (response.data.message === "Login successful") {
+        toast.success("Login successful!");
+        console.log("Hello");
+  
+        // Assuming response.data includes token or user info
+        setGlobalState(prev => ({ ...prev, user: response.data }));
+  
+        // Redirect based on role
+        // if (formData.role === 'student') {
+        //   navigate('/student/dashboard');
+        // } else if (formData.role === 'faculty') {
+        //   navigate('/faculty/dashboard');
+        // }
+        navigate('faculty');
+      }
+  
+      setIsLoading(false);
     } catch (err) {
+      console.error(err);
       setError('Login failed. Please check your credentials.');
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">

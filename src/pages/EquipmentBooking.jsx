@@ -4,6 +4,8 @@ import { Search, Filter, Calendar, Clock, Cpu, Server, Database, Layers, HardDri
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import BookingModal from '../components/equipment/BookingModal';
+import Api from '../constant/Api';
+import { useEffect } from 'react';
 
 // Mock API data for equipment booking
 // Schema:
@@ -43,206 +45,206 @@ import BookingModal from '../components/equipment/BookingModal';
 //   }>
 // }
 
-const mockEquipmentData = {
-  categories: [
-    {
-      id: 'cat-1',
-      name: 'Computing Hardware',
-      icon: 'Cpu',
-      description: 'High-performance computing resources including GPUs, servers, and specialized processors'
-    },
-    {
-      id: 'cat-2',
-      name: 'Sensors & IoT',
-      icon: 'Wifi',
-      description: 'Various sensors, actuators, and Internet of Things devices for research and projects'
-    },
-    {
-      id: 'cat-3',
-      name: 'Storage & Memory',
-      icon: 'Database',
-      description: 'Storage devices and memory modules for data-intensive applications'
-    },
-    {
-      id: 'cat-4',
-      name: 'Mobile & Embedded',
-      icon: 'Smartphone',
-      description: 'Mobile devices and embedded systems for testing and development'
-    },
-    {
-      id: 'cat-5',
-      name: 'Networking',
-      icon: 'Layers',
-      description: 'Networking equipment for communication and distributed systems research'
-    }
-  ],
-  equipment: [
-    {
-      id: 'eq-1',
-      name: 'NVIDIA RTX 4090 GPU',
-      description: 'High-end graphics processing unit for AI and deep learning applications',
-      categoryId: 'cat-1',
-      specifications: '24GB GDDR6X, 16384 CUDA cores, 2.52 GHz boost clock',
-      quantity: 4,
-      available: 2,
-      image: '/assets/equipment/gpu.jpg',
-      location: 'AI Lab (Room 302)',
-      requiresApproval: true
-    },
-    {
-      id: 'eq-2',
-      name: 'Temperature & Humidity Sensor Kit',
-      description: 'Precision sensors for environmental monitoring in IoT projects',
-      categoryId: 'cat-2',
-      specifications: 'DHT22 sensors, -40 to 80°C range, ±0.5°C accuracy',
-      quantity: 20,
-      available: 15,
-      image: '/assets/equipment/temp-sensor.jpg',
-      location: 'IoT Lab (Room 201)',
-      requiresApproval: false
-    },
-    {
-      id: 'eq-3',
-      name: 'High-Performance Server',
-      description: 'Multi-core server for distributed computing and virtualization',
-      categoryId: 'cat-1',
-      specifications: 'AMD EPYC 7763, 64 cores, 128 threads, 256GB RAM',
-      quantity: 2,
-      available: 1,
-      image: '/assets/equipment/server.jpg',
-      location: 'Server Room (Room 405)',
-      requiresApproval: true
-    },
-    {
-      id: 'eq-4',
-      name: 'Motion Capture System',
-      description: 'Advanced motion tracking system for computer vision research',
-      categoryId: 'cat-2',
-      specifications: '12-camera setup, 120fps, sub-millimeter accuracy',
-      quantity: 1,
-      available: 1,
-      image: '/assets/equipment/motion-capture.jpg',
-      location: 'Graphics Lab (Room 304)',
-      requiresApproval: true
-    },
-    {
-      id: 'eq-5',
-      name: 'SSD Storage Array',
-      description: 'High-speed storage array for data-intensive applications',
-      categoryId: 'cat-3',
-      specifications: '10TB total, NVMe SSDs, 7000MB/s read, 5000MB/s write',
-      quantity: 3,
-      available: 3,
-      image: '/assets/equipment/ssd-array.jpg',
-      location: 'Data Science Lab (Room 303)',
-      requiresApproval: false
-    },
-    {
-      id: 'eq-6',
-      name: 'Raspberry Pi Kit',
-      description: 'Complete Raspberry Pi development kit with accessories',
-      categoryId: 'cat-4',
-      specifications: 'Raspberry Pi 4B, 8GB RAM, 64GB SD, sensors, display',
-      quantity: 15,
-      available: 8,
-      image: '/assets/equipment/raspberry-pi.jpg',
-      location: 'Embedded Systems Lab (Room 202)',
-      requiresApproval: false
-    },
-    {
-      id: 'eq-7',
-      name: 'Network Testing Kit',
-      description: 'Professional networking equipment for protocol testing and research',
-      categoryId: 'cat-5',
-      specifications: 'Cisco switches, routers, packet analyzers, cables',
-      quantity: 5,
-      available: 4,
-      image: '/assets/equipment/network-kit.jpg',
-      location: 'Networking Lab (Room 203)',
-      requiresApproval: true
-    },
-    {
-      id: 'eq-8',
-      name: 'Drone Development Kit',
-      description: 'Programmable drone with sensors and development interface',
-      categoryId: 'cat-2',
-      specifications: 'Quadcopter, 4K camera, programmable flight controller',
-      quantity: 3,
-      available: 2,
-      image: '/assets/equipment/drone.jpg',
-      location: 'Robotics Lab (Room 305)',
-      requiresApproval: true
-    }
-  ],
-  bookings: [
-    {
-      id: 'book-1',
-      equipmentId: 'eq-1',
-      userId: 'user-1',
-      userName: 'Tanvir Ahmed',
-      userRole: 'student',
-      startTime: '2025-07-08T10:00:00',
-      endTime: '2025-07-08T14:00:00',
-      purpose: 'Deep learning model training for thesis project',
-      status: 'approved',
-      createdAt: '2025-07-01T09:30:00',
-      updatedAt: '2025-07-02T11:15:00'
-    },
-    {
-      id: 'book-2',
-      equipmentId: 'eq-1',
-      userId: 'user-2',
-      userName: 'Nusrat Jahan',
-      userRole: 'student',
-      startTime: '2025-07-09T09:00:00',
-      endTime: '2025-07-09T13:00:00',
-      purpose: 'Computer vision research project',
-      status: 'pending',
-      createdAt: '2025-07-03T14:20:00',
-      updatedAt: '2025-07-03T14:20:00'
-    },
-    {
-      id: 'book-3',
-      equipmentId: 'eq-3',
-      userId: 'user-3',
-      userName: 'Dr. Mahmud Hasan',
-      userRole: 'faculty',
-      startTime: '2025-07-10T13:00:00',
-      endTime: '2025-07-12T17:00:00',
-      purpose: 'Distributed database performance testing',
-      status: 'approved',
-      createdAt: '2025-06-28T10:45:00',
-      updatedAt: '2025-06-29T09:30:00'
-    },
-    {
-      id: 'book-4',
-      equipmentId: 'eq-7',
-      userId: 'user-4',
-      userName: 'Samiha Rahman',
-      userRole: 'student',
-      startTime: '2025-07-07T15:00:00',
-      endTime: '2025-07-07T18:00:00',
-      purpose: 'Network protocol testing for course project',
-      status: 'rejected',
-      createdAt: '2025-07-02T16:30:00',
-      updatedAt: '2025-07-03T11:20:00',
-      rejectionReason: 'Conflicting schedule with higher priority research'
-    },
-    {
-      id: 'book-5',
-      equipmentId: 'eq-8',
-      userId: 'user-5',
-      userName: 'Fahim Khan',
-      userRole: 'student',
-      startTime: '2025-07-15T10:00:00',
-      endTime: '2025-07-15T16:00:00',
-      purpose: 'Autonomous drone navigation testing',
-      status: 'pending',
-      createdAt: '2025-07-05T13:15:00',
-      updatedAt: '2025-07-05T13:15:00'
-    }
-  ]
-};
+// const mockEquipmentData = {
+//   categories: [
+//     {
+//       id: 'cat-1',
+//       name: 'Computing Hardware',
+//       icon: 'Cpu',
+//       description: 'High-performance computing resources including GPUs, servers, and specialized processors'
+//     },
+//     {
+//       id: 'cat-2',
+//       name: 'Sensors & IoT',
+//       icon: 'Wifi',
+//       description: 'Various sensors, actuators, and Internet of Things devices for research and projects'
+//     },
+//     {
+//       id: 'cat-3',
+//       name: 'Storage & Memory',
+//       icon: 'Database',
+//       description: 'Storage devices and memory modules for data-intensive applications'
+//     },
+//     {
+//       id: 'cat-4',
+//       name: 'Mobile & Embedded',
+//       icon: 'Smartphone',
+//       description: 'Mobile devices and embedded systems for testing and development'
+//     },
+//     {
+//       id: 'cat-5',
+//       name: 'Networking',
+//       icon: 'Layers',
+//       description: 'Networking equipment for communication and distributed systems research'
+//     }
+//   ],
+//   equipment: [
+//     {
+//       id: 'eq-1',
+//       name: 'NVIDIA RTX 4090 GPU',
+//       description: 'High-end graphics processing unit for AI and deep learning applications',
+//       categoryId: 'cat-1',
+//       specifications: '24GB GDDR6X, 16384 CUDA cores, 2.52 GHz boost clock',
+//       quantity: 4,
+//       available: 2,
+//       image: '/assets/equipment/gpu.jpg',
+//       location: 'AI Lab (Room 302)',
+//       requiresApproval: true
+//     },
+//     {
+//       id: 'eq-2',
+//       name: 'Temperature & Humidity Sensor Kit',
+//       description: 'Precision sensors for environmental monitoring in IoT projects',
+//       categoryId: 'cat-2',
+//       specifications: 'DHT22 sensors, -40 to 80°C range, ±0.5°C accuracy',
+//       quantity: 20,
+//       available: 15,
+//       image: '/assets/equipment/temp-sensor.jpg',
+//       location: 'IoT Lab (Room 201)',
+//       requiresApproval: false
+//     },
+//     {
+//       id: 'eq-3',
+//       name: 'High-Performance Server',
+//       description: 'Multi-core server for distributed computing and virtualization',
+//       categoryId: 'cat-1',
+//       specifications: 'AMD EPYC 7763, 64 cores, 128 threads, 256GB RAM',
+//       quantity: 2,
+//       available: 1,
+//       image: '/assets/equipment/server.jpg',
+//       location: 'Server Room (Room 405)',
+//       requiresApproval: true
+//     },
+//     {
+//       id: 'eq-4',
+//       name: 'Motion Capture System',
+//       description: 'Advanced motion tracking system for computer vision research',
+//       categoryId: 'cat-2',
+//       specifications: '12-camera setup, 120fps, sub-millimeter accuracy',
+//       quantity: 1,
+//       available: 1,
+//       image: '/assets/equipment/motion-capture.jpg',
+//       location: 'Graphics Lab (Room 304)',
+//       requiresApproval: true
+//     },
+//     {
+//       id: 'eq-5',
+//       name: 'SSD Storage Array',
+//       description: 'High-speed storage array for data-intensive applications',
+//       categoryId: 'cat-3',
+//       specifications: '10TB total, NVMe SSDs, 7000MB/s read, 5000MB/s write',
+//       quantity: 3,
+//       available: 3,
+//       image: '/assets/equipment/ssd-array.jpg',
+//       location: 'Data Science Lab (Room 303)',
+//       requiresApproval: false
+//     },
+//     {
+//       id: 'eq-6',
+//       name: 'Raspberry Pi Kit',
+//       description: 'Complete Raspberry Pi development kit with accessories',
+//       categoryId: 'cat-4',
+//       specifications: 'Raspberry Pi 4B, 8GB RAM, 64GB SD, sensors, display',
+//       quantity: 15,
+//       available: 8,
+//       image: '/assets/equipment/raspberry-pi.jpg',
+//       location: 'Embedded Systems Lab (Room 202)',
+//       requiresApproval: false
+//     },
+//     {
+//       id: 'eq-7',
+//       name: 'Network Testing Kit',
+//       description: 'Professional networking equipment for protocol testing and research',
+//       categoryId: 'cat-5',
+//       specifications: 'Cisco switches, routers, packet analyzers, cables',
+//       quantity: 5,
+//       available: 4,
+//       image: '/assets/equipment/network-kit.jpg',
+//       location: 'Networking Lab (Room 203)',
+//       requiresApproval: true
+//     },
+//     {
+//       id: 'eq-8',
+//       name: 'Drone Development Kit',
+//       description: 'Programmable drone with sensors and development interface',
+//       categoryId: 'cat-2',
+//       specifications: 'Quadcopter, 4K camera, programmable flight controller',
+//       quantity: 3,
+//       available: 2,
+//       image: '/assets/equipment/drone.jpg',
+//       location: 'Robotics Lab (Room 305)',
+//       requiresApproval: true
+//     }
+//   ],
+//   bookings: [
+//     {
+//       id: 'book-1',
+//       equipmentId: 'eq-1',
+//       userId: 'user-1',
+//       userName: 'Tanvir Ahmed',
+//       userRole: 'student',
+//       startTime: '2025-07-08T10:00:00',
+//       endTime: '2025-07-08T14:00:00',
+//       purpose: 'Deep learning model training for thesis project',
+//       status: 'approved',
+//       createdAt: '2025-07-01T09:30:00',
+//       updatedAt: '2025-07-02T11:15:00'
+//     },
+//     {
+//       id: 'book-2',
+//       equipmentId: 'eq-1',
+//       userId: 'user-2',
+//       userName: 'Nusrat Jahan',
+//       userRole: 'student',
+//       startTime: '2025-07-09T09:00:00',
+//       endTime: '2025-07-09T13:00:00',
+//       purpose: 'Computer vision research project',
+//       status: 'pending',
+//       createdAt: '2025-07-03T14:20:00',
+//       updatedAt: '2025-07-03T14:20:00'
+//     },
+//     {
+//       id: 'book-3',
+//       equipmentId: 'eq-3',
+//       userId: 'user-3',
+//       userName: 'Dr. Mahmud Hasan',
+//       userRole: 'faculty',
+//       startTime: '2025-07-10T13:00:00',
+//       endTime: '2025-07-12T17:00:00',
+//       purpose: 'Distributed database performance testing',
+//       status: 'approved',
+//       createdAt: '2025-06-28T10:45:00',
+//       updatedAt: '2025-06-29T09:30:00'
+//     },
+//     {
+//       id: 'book-4',
+//       equipmentId: 'eq-7',
+//       userId: 'user-4',
+//       userName: 'Samiha Rahman',
+//       userRole: 'student',
+//       startTime: '2025-07-07T15:00:00',
+//       endTime: '2025-07-07T18:00:00',
+//       purpose: 'Network protocol testing for course project',
+//       status: 'rejected',
+//       createdAt: '2025-07-02T16:30:00',
+//       updatedAt: '2025-07-03T11:20:00',
+//       rejectionReason: 'Conflicting schedule with higher priority research'
+//     },
+//     {
+//       id: 'book-5',
+//       equipmentId: 'eq-8',
+//       userId: 'user-5',
+//       userName: 'Fahim Khan',
+//       userRole: 'student',
+//       startTime: '2025-07-15T10:00:00',
+//       endTime: '2025-07-15T16:00:00',
+//       purpose: 'Autonomous drone navigation testing',
+//       status: 'pending',
+//       createdAt: '2025-07-05T13:15:00',
+//       updatedAt: '2025-07-05T13:15:00'
+//     }
+//   ]
+// };
 
 const EquipmentBooking = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -251,6 +253,35 @@ const EquipmentBooking = () => {
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userBookings, setUserBookings] = useState([]);
+
+  const [mockEquipmentData, setMockEquipmentData] = useState(null);
+
+  
+  useEffect(() => {
+    const fetchEquipmentData = async () => {
+      try {
+        const [catRes , eqRes , bookingRes] = await Promise.all([
+          Api.get('api/equipment/categories'),
+          Api.get('api/equipment/'),
+          Api.get('api/equipment/bookings')
+        ]);
+        const combinedData = {
+          categories: catRes.data,
+          equipment: eqRes.data,
+          bookings: bookingRes.data
+        };
+        setMockEquipmentData(combinedData);
+      } catch (error) {
+        console.error('Error fetching equipment data:', error);
+      }
+    };
+    fetchEquipmentData();
+  }, []);
+
+  useEffect(() => {
+    console.log('Updated mockEquipmentData:', mockEquipmentData);
+  }, [mockEquipmentData]);
+  
   
   // Open booking modal with selected equipment
   const handleBookNow = (equipment) => {
@@ -260,6 +291,7 @@ const EquipmentBooking = () => {
   
   // Handle booking submission
   const handleBookingSubmit = (bookingData) => {
+
     // In a real app, this would be sent to the backend
     console.log('Booking submitted:', bookingData);
     
@@ -273,37 +305,57 @@ const EquipmentBooking = () => {
       purpose: bookingData.purpose,
       status: selectedEquipment.requiresApproval ? 'pending' : 'approved',
       createdAt: new Date().toISOString()
+
     };
     
     setUserBookings([newBooking, ...userBookings]);
   };
   
   // Filter equipment based on category, search query, and availability
+  // const filteredEquipment = useMemo(() => {
+  //   return mockEquipmentData.equipment.filter(item => {
+  //     // Filter by category
+  //     if (selectedCategory !== 'all' && item.categoryId !== selectedCategory) {
+  //       return false;
+  //     }
+      
+  //     // Filter by availability
+  //     if (showAvailableOnly && item.available === 0) {
+  //       return false;
+  //     }
+      
+  //     // Filter by search query
+  //     if (searchQuery) {
+  //       const query = searchQuery.toLowerCase();
+  //       return (
+  //         item.name.toLowerCase().includes(query) ||
+  //         item.description.toLowerCase().includes(query) ||
+  //         item.specifications.toLowerCase().includes(query)
+  //       );
+  //     }
+      
+  //     return true;
+  //   });
+  // }, [selectedCategory, searchQuery, showAvailableOnly]);
+
   const filteredEquipment = useMemo(() => {
-    return mockEquipmentData.equipment.filter(item => {
-      // Filter by category
-      if (selectedCategory !== 'all' && item.categoryId !== selectedCategory) {
-        return false;
-      }
-      
-      // Filter by availability
-      if (showAvailableOnly && item.available === 0) {
-        return false;
-      }
-      
-      // Filter by search query
+    const equipmentList = mockEquipmentData?.equipment || [];
+  
+    return equipmentList.filter(item => {
+      if (selectedCategory !== 'all' && item.categoryId !== selectedCategory) return false;
+      if (showAvailableOnly && item.available === 0) return false;
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+        const q = searchQuery.toLowerCase();
         return (
-          item.name.toLowerCase().includes(query) ||
-          item.description.toLowerCase().includes(query) ||
-          item.specifications.toLowerCase().includes(query)
+          item.name.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          item.specifications.toLowerCase().includes(q)
         );
       }
-      
       return true;
     });
-  }, [selectedCategory, searchQuery, showAvailableOnly]);
+  }, [mockEquipmentData, selectedCategory, searchQuery, showAvailableOnly]);
+  
   
   // Get category name by ID
   const getCategoryName = (categoryId) => {
@@ -325,6 +377,8 @@ const EquipmentBooking = () => {
       default: return <HardDrive size={20} />;
     }
   };
+
+
   
   return (
     <>
@@ -369,7 +423,7 @@ const EquipmentBooking = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">All Categories</option>
-                {mockEquipmentData.categories.map(category => (
+                {mockEquipmentData?.categories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>

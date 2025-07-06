@@ -37,6 +37,10 @@ import StudentFees from './pages/dashboard/StudentFees';
 import FacultyDashboard from './pages/dashboard/FacultyDashboard';
 import FacultyMeetings from './pages/dashboard/FacultyMeetings';
 
+
+
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <Router>
@@ -95,6 +99,8 @@ function App() {
           <Route path="meetings" element={<FacultyMeetings />} />
         </Route>
       </Routes>
+
+      <Toaster />
     </Router>
   )
 }

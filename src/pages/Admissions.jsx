@@ -5,6 +5,8 @@ import ApplicationProcess from '@/components/admissions/ApplicationProcess'
 import RequirementsDeadlines from '@/components/admissions/RequirementsDeadlines'
 import AdmissionFAQs from '@/components/admissions/AdmissionFAQs'
 
+import Api from '../constant/Api'
+import { useEffect, useState } from 'react'
 /**
  * API Schema:
  * 
@@ -38,58 +40,58 @@ import AdmissionFAQs from '@/components/admissions/AdmissionFAQs'
  */
 
 // Mock API data
-const mockStats = {
-  nextDeadline: "July 30, 2025",
-  programsOffered: 8,
-  applicationTime: "4-6 weeks",
-  acceptanceRate: "12%"
-}
+// const mockStats = {
+//   nextDeadline: "July 30, 2025",
+//   programsOffered: 8,
+//   applicationTime: "4-6 weeks",
+//   acceptanceRate: "12%"
+// }
 
-const mockDeadlines = [
-  {
-    program: "BSc in Computer Science and Engineering",
-    level: "Undergraduate",
-    date: "2025-07-30",
-    requirements: "HSC/A-Level with minimum GPA 4.5, Admission test required",
-    notes: "Limited seats available. Early application recommended."
-  },
-  {
-    program: "BSc in Software Engineering",
-    level: "Undergraduate",
-    date: "2025-08-15",
-    requirements: "HSC/A-Level with minimum GPA 4.5, Admission test required"
-  },
-  {
-    program: "MSc in Computer Science",
-    level: "Graduate",
-    date: "2025-09-10",
-    requirements: "BSc in CS/IT/related field with minimum CGPA 3.0"
-  },
-  {
-    program: "MSc in Data Science",
-    level: "Graduate",
-    date: "2025-09-10",
-    requirements: "BSc in CS/Statistics/Mathematics with minimum CGPA 3.0"
-  },
-  {
-    program: "MSc in Artificial Intelligence",
-    level: "Graduate",
-    date: "2025-10-05",
-    requirements: "BSc in CS/related field with minimum CGPA 3.0, Programming experience required"
-  },
-  {
-    program: "PhD in Computer Science",
-    level: "Postgraduate",
-    date: "2025-11-15",
-    requirements: "MSc in CS/related field with minimum CGPA 3.5, Research proposal required"
-  },
-  {
-    program: "PhD in Machine Learning and AI",
-    level: "Postgraduate",
-    date: "2025-11-15",
-    requirements: "MSc in CS/AI/related field with minimum CGPA 3.5, Research proposal required"
-  }
-]
+// const mockDeadlines = [
+//   {
+//     program: "BSc in Computer Science and Engineering",
+//     level: "Undergraduate",
+//     date: "2025-07-30",
+//     requirements: "HSC/A-Level with minimum GPA 4.5, Admission test required",
+//     notes: "Limited seats available. Early application recommended."
+//   },
+//   {
+//     program: "BSc in Software Engineering",
+//     level: "Undergraduate",
+//     date: "2025-08-15",
+//     requirements: "HSC/A-Level with minimum GPA 4.5, Admission test required"
+//   },
+//   {
+//     program: "MSc in Computer Science",
+//     level: "Graduate",
+//     date: "2025-09-10",
+//     requirements: "BSc in CS/IT/related field with minimum CGPA 3.0"
+//   },
+//   {
+//     program: "MSc in Data Science",
+//     level: "Graduate",
+//     date: "2025-09-10",
+//     requirements: "BSc in CS/Statistics/Mathematics with minimum CGPA 3.0"
+//   },
+//   {
+//     program: "MSc in Artificial Intelligence",
+//     level: "Graduate",
+//     date: "2025-10-05",
+//     requirements: "BSc in CS/related field with minimum CGPA 3.0, Programming experience required"
+//   },
+//   {
+//     program: "PhD in Computer Science",
+//     level: "Postgraduate",
+//     date: "2025-11-15",
+//     requirements: "MSc in CS/related field with minimum CGPA 3.5, Research proposal required"
+//   },
+//   {
+//     program: "PhD in Machine Learning and AI",
+//     level: "Postgraduate",
+//     date: "2025-11-15",
+//     requirements: "MSc in CS/AI/related field with minimum CGPA 3.5, Research proposal required"
+//   }
+// ]
 
 const mockFAQs = [
   {
@@ -274,6 +276,51 @@ const mockFAQs = [
 ]
 
 const Admissions = () => {
+
+  const [stats, setStats] = useState({});
+  const [deadlines, setDeadlines] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await Api.get('api/admissions/stats');
+        setStats(response.data);
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    const fetchDeadlines = async () => {
+      try {
+        const response = await Api.get('api/admissions/deadlines');
+        setDeadlines(response.data);
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching deadlines:', error);
+      }
+    };
+    fetchDeadlines();
+  }, []);
+
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        const response = await Api.get('api/admissions/faqs');
+        setFaqs(response.data);
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching faqs:', error);
+      }
+    };
+    fetchFaqs();
+  }, []);
+
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -281,16 +328,16 @@ const Admissions = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <AdmissionHero stats={mockStats} />
+      <AdmissionHero stats={stats} />
       
       <ApplicationProcess />
       
       <RequirementsDeadlines 
         requirements={{}}
-        deadlines={mockDeadlines}
+        deadlines={deadlines}
       />
       
-      <AdmissionFAQs faqs={mockFAQs} />
+      <AdmissionFAQs faqs={faqs} />
       
       <section className="py-16 bg-blue-900 text-white">
         <div className="container mx-auto px-4 text-center">

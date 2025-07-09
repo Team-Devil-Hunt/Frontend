@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo , useEffect} from 'react';
 import { motion } from 'framer-motion';
 import { Search, Award, Trophy, BookOpen, Medal, Bookmark } from 'lucide-react';
 import AwardCard from '@/components/awards/AwardCard';
 import AwardFilters from '@/components/awards/AwardFilters';
 import AwardDetails from '@/components/awards/AwardDetails';
+
+import Api from '../constant/Api'
 
 /*
 API Schema:
@@ -260,6 +262,23 @@ const mockAwards = [
 ];
 
 const Awards = () => {
+
+  const [awards, setAwards] = useState([])
+  
+  useEffect(() => {
+    const fetchAwardsData = async () => {
+      try {
+        const response = await Api.get('api/awards/');
+        setAwards(response.data);
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching awards data:', error);
+      }
+    };
+    fetchAwardsData();
+  }, []);
+
+
   // State for filters
   const [filters, setFilters] = useState({
     search: '',
@@ -274,7 +293,7 @@ const Awards = () => {
   
   // Filter awards based on selected filters
   const filteredAwards = useMemo(() => {
-    return mockAwards.filter(award => {
+    return awards.filter(award => {
       // Search filter
       if (filters.search && !(
         award.title.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -398,7 +417,7 @@ const Awards = () => {
               </h2>
               
               <AwardFilters 
-                awards={mockAwards} 
+                awards={awards} 
                 filters={filters} 
                 onFiltersChange={setFilters} 
               />

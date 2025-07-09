@@ -171,6 +171,7 @@ const EventCard = ({ event, index, onRegister }) => {
               
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-500" />
+                {/* mock data startDate. I have changed this according to real API */}
                 <span>{formatTime(event.startDate)} - {formatTime(event.endDate)}</span>
               </div>
               

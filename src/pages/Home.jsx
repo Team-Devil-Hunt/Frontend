@@ -55,6 +55,9 @@ import department3 from '../assets/department3.jpg'
 import department4 from '../assets/department4.jpg'
 import chairman1 from '../assets/chairman1.jpg'
 
+import { useEffect , useState } from 'react'
+import Api from '../constant/Api'
+
 // Mock API Data
 const mockOverviewData = {
   title: "Department of Computer Science & Engineering",
@@ -68,46 +71,46 @@ const mockOverviewData = {
   heroImage: department1
 }
 
-const mockAnnouncementsData = {
-  announcements: [
-    {
-      id: '1',
-      title: 'Spring 2024 Semester Registration Open',
-      content: 'Registration for Spring 2024 semester is now open. Students can register for courses through the online portal until January 15, 2024.',
-      date: '2024-01-05',
-      type: 'academic',
-      priority: 'high',
-      image: department2
-    },
-    {
-      id: '2',
-      title: 'Research Symposium 2024',
-      content: 'Annual research symposium showcasing student and faculty research projects. Join us on February 20-21, 2024.',
-      date: '2024-01-03',
-      type: 'academic',
-      priority: 'medium',
-      image: department3
-    },
-    {
-      id: '3',
-      title: 'New Faculty Joining',
-      content: 'We welcome Dr. Sarah Ahmed and Dr. Mohammad Rahman to our faculty team, bringing expertise in AI and Cybersecurity.',
-      date: '2024-01-01',
-      type: 'general',
-      priority: 'medium',
-      image: chairman1
-    },
-    {
-      id: '4',
-      title: 'Lab Equipment Upgrade',
-      content: 'Our computer labs have been upgraded with latest hardware and software to enhance student learning experience.',
-      date: '2023-12-28',
-      type: 'admin',
-      priority: 'low',
-      image: department4
-    }
-  ]
-}
+// const mockAnnouncementsData = {
+//   announcements: [
+//     {
+//       id: '1',
+//       title: 'Spring 2024 Semester Registration Open',
+//       content: 'Registration for Spring 2024 semester is now open. Students can register for courses through the online portal until January 15, 2024.',
+//       date: '2024-01-05',
+//       type: 'academic',
+//       priority: 'high',
+//       image: department2
+//     },
+//     {
+//       id: '2',
+//       title: 'Research Symposium 2024',
+//       content: 'Annual research symposium showcasing student and faculty research projects. Join us on February 20-21, 2024.',
+//       date: '2024-01-03',
+//       type: 'academic',
+//       priority: 'medium',
+//       image: department3
+//     },
+//     {
+//       id: '3',
+//       title: 'New Faculty Joining',
+//       content: 'We welcome Dr. Sarah Ahmed and Dr. Mohammad Rahman to our faculty team, bringing expertise in AI and Cybersecurity.',
+//       date: '2024-01-01',
+//       type: 'general',
+//       priority: 'medium',
+//       image: chairman1
+//     },
+//     {
+//       id: '4',
+//       title: 'Lab Equipment Upgrade',
+//       content: 'Our computer labs have been upgraded with latest hardware and software to enhance student learning experience.',
+//       date: '2023-12-28',
+//       type: 'admin',
+//       priority: 'low',
+//       image: department4
+//     }
+//   ]
+// }
 
 const mockQuickLinksData = {
   links: [
@@ -202,10 +205,26 @@ const Home = () => {
     }
   }
 
+
+  const [announcementsData, setAnnouncementsData] = useState([]);
+  useEffect(() => {
+    const fetchAnnouncementsData = async () => {
+      try {
+        const response = await Api.get('api/announcements');
+        setAnnouncementsData(response.data);
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching overview data:', error);
+      }
+    };
+    fetchAnnouncementsData();
+  }, []);
+  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <HeroSection data={mockOverviewData} variants={variants} />
-      <AnnouncementsSection data={mockAnnouncementsData} variants={variants} />
+      <AnnouncementsSection data={announcementsData} variants={variants} />
       <QuickLinksSection data={mockQuickLinksData} variants={variants} />
       <CallToActionSection variants={variants} />
     </div>

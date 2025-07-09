@@ -51,157 +51,181 @@ import EventCard from '@/components/events/EventCard'
 import EventFilters from '@/components/events/EventFilters'
 import EventRegistrationModal from '@/components/events/EventRegistrationModal'
 
+import Api from '../constant/Api'
+
+
 // Mock API Data
-const mockEvents = [
-  {
-    id: '1',
-    title: 'AI & Machine Learning Symposium 2024',
-    description: 'Join leading researchers and industry experts as they discuss the latest advances in artificial intelligence and machine learning technologies.',
-    type: 'conference',
-    status: 'registration_open',
-    startDate: '2024-08-15T09:00:00Z',
-    endDate: '2024-08-15T17:00:00Z',
-    venue: 'Main Auditorium, CSE Building',
-    speaker: 'Dr. Sarah Ahmed, MIT',
-    organizer: 'CSE Department',
-    maxParticipants: 200,
-    registeredCount: 145,
-    registrationRequired: true,
-    registrationDeadline: '2024-08-10T23:59:59Z',
-    fee: 500,
-    externalLink: 'https://ai-symposium.csedu.ac.bd',
-    tags: ['AI', 'Machine Learning', 'Research']
-  },
-  {
-    id: '2',
-    title: 'Web Development Workshop',
-    description: 'Hands-on workshop covering modern web development technologies including React, Node.js, and MongoDB.',
-    type: 'workshop',
-    status: 'upcoming',
-    startDate: '2024-07-20T14:00:00Z',
-    endDate: '2024-07-20T18:00:00Z',
-    venue: 'Computer Lab 1, 3rd Floor',
-    speaker: 'Md. Rafiq Hassan, Senior Developer',
-    organizer: 'Programming Club',
-    maxParticipants: 30,
-    registeredCount: 28,
-    registrationRequired: true,
-    registrationDeadline: '2024-07-18T23:59:59Z',
-    fee: 0,
-    tags: ['Web Development', 'React', 'Node.js']
-  },
-  {
-    id: '3',
-    title: 'Cybersecurity Awareness Seminar',
-    description: 'Learn about the latest cybersecurity threats and how to protect yourself and your organization from cyber attacks.',
-    type: 'seminar',
-    status: 'registration_open',
-    startDate: '2024-07-25T10:00:00Z',
-    endDate: '2024-07-25T12:00:00Z',
-    venue: 'Seminar Room 201',
-    speaker: 'Prof. Dr. Aminul Islam',
-    organizer: 'CSE Department',
-    maxParticipants: 100,
-    registeredCount: 67,
-    registrationRequired: true,
-    registrationDeadline: '2024-07-23T23:59:59Z',
-    fee: 0,
-    externalLink: 'https://cybersec.csedu.ac.bd',
-    tags: ['Cybersecurity', 'Awareness', 'Protection']
-  },
-  {
-    id: '4',
-    title: 'Inter-University Programming Contest',
-    description: 'Annual programming competition featuring teams from universities across Bangladesh. Test your coding skills!',
-    type: 'competition',
-    status: 'registration_open',
-    startDate: '2024-08-05T09:00:00Z',
-    endDate: '2024-08-05T17:00:00Z',
-    venue: 'Computer Lab Complex',
-    organizer: 'ACM Student Chapter',
-    maxParticipants: 150,
-    registeredCount: 89,
-    registrationRequired: true,
-    registrationDeadline: '2024-08-01T23:59:59Z',
-    fee: 300,
-    tags: ['Programming', 'Competition', 'ACM']
-  },
-  {
-    id: '5',
-    title: 'Cultural Night 2024',
-    description: 'Annual cultural program featuring music, dance, drama, and poetry performances by students and faculty.',
-    type: 'cultural',
-    status: 'upcoming',
-    startDate: '2024-07-30T18:00:00Z',
-    endDate: '2024-07-30T22:00:00Z',
-    venue: 'University Auditorium',
-    organizer: 'Cultural Committee',
-    maxParticipants: 500,
-    registeredCount: 234,
-    registrationRequired: false,
-    fee: 0,
-    tags: ['Cultural', 'Music', 'Dance', 'Entertainment']
-  },
-  {
-    id: '6',
-    title: 'Research Methodology Workshop',
-    description: 'Essential workshop for graduate students covering research methodologies, paper writing, and publication strategies.',
-    type: 'academic',
-    status: 'registration_open',
-    startDate: '2024-08-12T09:00:00Z',
-    endDate: '2024-08-12T16:00:00Z',
-    venue: 'Graduate Seminar Room',
-    speaker: 'Prof. Dr. Md. Abdur Rahman',
-    organizer: 'Graduate Studies Committee',
-    maxParticipants: 50,
-    registeredCount: 32,
-    registrationRequired: true,
-    registrationDeadline: '2024-08-08T23:59:59Z',
-    fee: 200,
-    tags: ['Research', 'Academic', 'Graduate']
-  },
-  {
-    id: '7',
-    title: 'Blockchain Technology Seminar',
-    description: 'Explore the fundamentals of blockchain technology and its applications in various industries.',
-    type: 'seminar',
-    status: 'upcoming',
-    startDate: '2024-08-20T15:00:00Z',
-    endDate: '2024-08-20T17:00:00Z',
-    venue: 'Seminar Room 301',
-    speaker: 'Dr. Tanvir Ahmed, Blockchain Expert',
-    organizer: 'Innovation Lab',
-    maxParticipants: 80,
-    registeredCount: 45,
-    registrationRequired: true,
-    registrationDeadline: '2024-08-18T23:59:59Z',
-    fee: 0,
-    tags: ['Blockchain', 'Technology', 'Innovation']
-  },
-  {
-    id: '8',
-    title: 'Mobile App Development Bootcamp',
-    description: '3-day intensive bootcamp covering iOS and Android app development using React Native and Flutter.',
-    type: 'workshop',
-    status: 'registration_open',
-    startDate: '2024-09-01T09:00:00Z',
-    endDate: '2024-09-03T17:00:00Z',
-    venue: 'Mobile Development Lab',
-    speaker: 'Team of Industry Experts',
-    organizer: 'Mobile Development Club',
-    maxParticipants: 25,
-    registeredCount: 18,
-    registrationRequired: true,
-    registrationDeadline: '2024-08-25T23:59:59Z',
-    fee: 1500,
-    externalLink: 'https://mobiledev.csedu.ac.bd',
-    tags: ['Mobile Development', 'React Native', 'Flutter']
-  }
-]
+// const mockEvents = [
+//   {
+//     id: '1',
+//     title: 'AI & Machine Learning Symposium 2024',
+//     description: 'Join leading researchers and industry experts as they discuss the latest advances in artificial intelligence and machine learning technologies.',
+//     type: 'conference',
+//     status: 'registration_open',
+//     startDate: '2024-08-15T09:00:00Z',
+//     endDate: '2024-08-15T17:00:00Z',
+//     venue: 'Main Auditorium, CSE Building',
+//     speaker: 'Dr. Sarah Ahmed, MIT',
+//     organizer: 'CSE Department',
+//     maxParticipants: 200,
+//     registeredCount: 145,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-08-10T23:59:59Z',
+//     fee: 500,
+//     externalLink: 'https://ai-symposium.csedu.ac.bd',
+//     tags: ['AI', 'Machine Learning', 'Research']
+//   },
+//   {
+//     id: '2',
+//     title: 'Web Development Workshop',
+//     description: 'Hands-on workshop covering modern web development technologies including React, Node.js, and MongoDB.',
+//     type: 'workshop',
+//     status: 'upcoming',
+//     startDate: '2024-07-20T14:00:00Z',
+//     endDate: '2024-07-20T18:00:00Z',
+//     venue: 'Computer Lab 1, 3rd Floor',
+//     speaker: 'Md. Rafiq Hassan, Senior Developer',
+//     organizer: 'Programming Club',
+//     maxParticipants: 30,
+//     registeredCount: 28,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-07-18T23:59:59Z',
+//     fee: 0,
+//     tags: ['Web Development', 'React', 'Node.js']
+//   },
+//   {
+//     id: '3',
+//     title: 'Cybersecurity Awareness Seminar',
+//     description: 'Learn about the latest cybersecurity threats and how to protect yourself and your organization from cyber attacks.',
+//     type: 'seminar',
+//     status: 'registration_open',
+//     startDate: '2024-07-25T10:00:00Z',
+//     endDate: '2024-07-25T12:00:00Z',
+//     venue: 'Seminar Room 201',
+//     speaker: 'Prof. Dr. Aminul Islam',
+//     organizer: 'CSE Department',
+//     maxParticipants: 100,
+//     registeredCount: 67,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-07-23T23:59:59Z',
+//     fee: 0,
+//     externalLink: 'https://cybersec.csedu.ac.bd',
+//     tags: ['Cybersecurity', 'Awareness', 'Protection']
+//   },
+//   {
+//     id: '4',
+//     title: 'Inter-University Programming Contest',
+//     description: 'Annual programming competition featuring teams from universities across Bangladesh. Test your coding skills!',
+//     type: 'competition',
+//     status: 'registration_open',
+//     startDate: '2024-08-05T09:00:00Z',
+//     endDate: '2024-08-05T17:00:00Z',
+//     venue: 'Computer Lab Complex',
+//     organizer: 'ACM Student Chapter',
+//     maxParticipants: 150,
+//     registeredCount: 89,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-08-01T23:59:59Z',
+//     fee: 300,
+//     tags: ['Programming', 'Competition', 'ACM']
+//   },
+//   {
+//     id: '5',
+//     title: 'Cultural Night 2024',
+//     description: 'Annual cultural program featuring music, dance, drama, and poetry performances by students and faculty.',
+//     type: 'cultural',
+//     status: 'upcoming',
+//     startDate: '2024-07-30T18:00:00Z',
+//     endDate: '2024-07-30T22:00:00Z',
+//     venue: 'University Auditorium',
+//     organizer: 'Cultural Committee',
+//     maxParticipants: 500,
+//     registeredCount: 234,
+//     registrationRequired: false,
+//     fee: 0,
+//     tags: ['Cultural', 'Music', 'Dance', 'Entertainment']
+//   },
+//   {
+//     id: '6',
+//     title: 'Research Methodology Workshop',
+//     description: 'Essential workshop for graduate students covering research methodologies, paper writing, and publication strategies.',
+//     type: 'academic',
+//     status: 'registration_open',
+//     startDate: '2024-08-12T09:00:00Z',
+//     endDate: '2024-08-12T16:00:00Z',
+//     venue: 'Graduate Seminar Room',
+//     speaker: 'Prof. Dr. Md. Abdur Rahman',
+//     organizer: 'Graduate Studies Committee',
+//     maxParticipants: 50,
+//     registeredCount: 32,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-08-08T23:59:59Z',
+//     fee: 200,
+//     tags: ['Research', 'Academic', 'Graduate']
+//   },
+//   {
+//     id: '7',
+//     title: 'Blockchain Technology Seminar',
+//     description: 'Explore the fundamentals of blockchain technology and its applications in various industries.',
+//     type: 'seminar',
+//     status: 'upcoming',
+//     startDate: '2024-08-20T15:00:00Z',
+//     endDate: '2024-08-20T17:00:00Z',
+//     venue: 'Seminar Room 301',
+//     speaker: 'Dr. Tanvir Ahmed, Blockchain Expert',
+//     organizer: 'Innovation Lab',
+//     maxParticipants: 80,
+//     registeredCount: 45,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-08-18T23:59:59Z',
+//     fee: 0,
+//     tags: ['Blockchain', 'Technology', 'Innovation']
+//   },
+//   {
+//     id: '8',
+//     title: 'Mobile App Development Bootcamp',
+//     description: '3-day intensive bootcamp covering iOS and Android app development using React Native and Flutter.',
+//     type: 'workshop',
+//     status: 'registration_open',
+//     startDate: '2024-09-01T09:00:00Z',
+//     endDate: '2024-09-03T17:00:00Z',
+//     venue: 'Mobile Development Lab',
+//     speaker: 'Team of Industry Experts',
+//     organizer: 'Mobile Development Club',
+//     maxParticipants: 25,
+//     registeredCount: 18,
+//     registrationRequired: true,
+//     registrationDeadline: '2024-08-25T23:59:59Z',
+//     fee: 1500,
+//     externalLink: 'https://mobiledev.csedu.ac.bd',
+//     tags: ['Mobile Development', 'React Native', 'Flutter']
+//   }
+// ]
 
 const Events = () => {
-  const [events, setEvents] = useState(mockEvents)
-  const [filteredEvents, setFilteredEvents] = useState(mockEvents)
+
+  //real api call
+
+  // const [realEvents, setRealEvents] = useState([])
+
+
+
+  const [events, setEvents] = useState([])
+  const [filteredEvents, setFilteredEvents] = useState([])
+
+  useEffect(() => {
+    const fetchEventsData = async () => {
+          try {
+            const response = await Api.get('api/events');
+            setEvents(response.data);
+            setFilteredEvents(response.data);
+            console.log(response.data);
+          } catch (error) {
+            console.error('Error fetching overview data:', error);
+          }
+        };
+        fetchEventsData();
+  }, [])
   const [filters, setFilters] = useState({
     search: '',
     types: [],

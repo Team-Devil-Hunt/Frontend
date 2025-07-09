@@ -22,7 +22,7 @@ GET /api/exams
 }
 */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo , useEffect} from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Users, Filter, Search, AlertTriangle } from 'lucide-react';
 import ExamFilters from '../components/exams/ExamFilters';
@@ -30,8 +30,10 @@ import ExamCard from '../components/exams/ExamCard';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
+import Api from '../constant/Api'
+
 // Mock data for exams
-const mockExams = [
+const exams = [
   {
     id: "1",
     courseCode: "CSE-401",
@@ -185,6 +187,23 @@ const mockExams = [
 ];
 
 const ExamTimetables = () => {
+
+  const [exams, setExams] = useState([]);
+
+  useEffect(() => {
+    fetchExamsData();
+  }, []);
+
+  const fetchExamsData = async () => {
+    try {
+      const response = await Api.get('api/exams');
+      setExams(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error fetching exams data:', error);
+    }
+  };
+
   const [filters, setFilters] = useState({
     search: '',
     semester: 'all',
@@ -195,13 +214,13 @@ const ExamTimetables = () => {
   });
 
   // Get unique values for filter dropdowns
-  const uniqueSemesters = [...new Set(mockExams.map(exam => exam.semester))].sort((a, b) => a - b);
-  const uniqueRooms = [...new Set(mockExams.map(exam => exam.room))].sort();
-  const uniqueBatches = [...new Set(mockExams.map(exam => exam.batch))].sort((a, b) => b - a);
+  const uniqueSemesters = [...new Set(exams.map(exam => exam.semester))].sort((a, b) => a - b);
+  const uniqueRooms = [...new Set(exams.map(exam => exam.room))].sort();
+  const uniqueBatches = [...new Set(exams.map(exam => exam.batch))].sort((a, b) => b - a);
   
   // Filter exams based on selected filters
   const filteredExams = useMemo(() => {
-    return mockExams.filter(exam => {
+    return exams.filter(exam => {
       // Search filter
       const searchMatch = 
         filters.search === '' || 
@@ -270,7 +289,7 @@ const ExamTimetables = () => {
         >
           <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg p-6 text-white shadow-lg">
             <h3 className="text-xl font-semibold mb-2">Upcoming Exams</h3>
-            <p className="text-3xl font-bold">{mockExams.filter(e => e.status === 'scheduled').length}</p>
+            <p className="text-3xl font-bold">{exams.filter(e => e.status === 'scheduled').length}</p>
           </div>
           <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-lg p-6 text-white shadow-lg">
             <h3 className="text-xl font-semibold mb-2">This Week</h3>
@@ -278,7 +297,7 @@ const ExamTimetables = () => {
           </div>
           <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-6 text-white shadow-lg">
             <h3 className="text-xl font-semibold mb-2">Total Courses</h3>
-            <p className="text-3xl font-bold">{[...new Set(mockExams.map(e => e.courseCode))].length}</p>
+            <p className="text-3xl font-bold">{[...new Set(exams.map(e => e.courseCode))].length}</p>
           </div>
         </motion.div>
 

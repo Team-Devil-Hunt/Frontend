@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 
+import department1 from '../../assets/department1.jpg'
+
+
 const AnnouncementsSection = ({ data, variants }) => {
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -44,12 +47,13 @@ const AnnouncementsSection = ({ data, variants }) => {
         </motion.div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
-          {data.announcements.slice(0, 4).map((announcement) => (
+          {data.slice(0, 4).map((announcement) => (
             <motion.div key={announcement.id} variants={variants.item}>
               <Card className="h-full hover:shadow-lg transition-shadow duration-300 group">
                 <div className="relative">
                   <img 
-                    src={announcement.image} 
+                  // random image
+                    src={department1} 
                     alt={announcement.title}
                     className="w-full h-48 object-cover rounded-t-lg"
                   />

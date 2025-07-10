@@ -7,6 +7,8 @@ import ScheduleFilters from '@/components/schedule/ScheduleFilters'
 import ScheduleCard from '@/components/schedule/ScheduleCard'
 import WeeklyView from '@/components/schedule/WeeklyView'
 
+import Api from '../constant/Api'
+
 /*
 API Schema:
 GET /api/schedule/classes
@@ -270,7 +272,30 @@ const mockScheduleData = {
 }
 
 const Schedule = () => {
-  const [scheduleData, setScheduleData] = useState(mockScheduleData)
+
+
+  const [scheduleData, setScheduleData] = useState({
+    classes: [],
+    batches: [],
+    semesters: [],
+    rooms: []
+  });
+
+  // const [scheduleData, setScheduleData] = useState(mockScheduleData);
+  
+
+  useEffect(() => {
+      const fetchScheduleData = async () => {
+        try {
+          const response = await Api.get('api/schedule');
+          setScheduleData(response.data);
+          console.log(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+      };
+      fetchScheduleData();
+    }, []);
   const [filters, setFilters] = useState({
     search: '',
     batch: '',
@@ -307,16 +332,16 @@ const Schedule = () => {
   }
   
   // Fetch schedule data from API
-  useEffect(() => {
-    // In a real application, this would be an API call
-    // fetch('/api/schedule/classes')
-    //   .then(response => response.json())
-    //   .then(data => setScheduleData(data))
-    //   .catch(error => console.error('Error fetching schedule data:', error))
+  // useEffect(() => {
+  //   // In a real application, this would be an API call
+  //   // fetch('/api/schedule/classes')
+  //   //   .then(response => response.json())
+  //   //   .then(data => setScheduleData(data))
+  //   //   .catch(error => console.error('Error fetching schedule data:', error))
     
-    // Using mock data for now
-    setScheduleData(mockScheduleData)
-  }, [])
+  //   // Using mock data for now
+  //   setScheduleData(mockScheduleData)
+  // }, [])
   
   return (
     <div className="container mx-auto py-8 px-4">

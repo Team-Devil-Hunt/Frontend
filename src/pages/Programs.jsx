@@ -55,6 +55,8 @@ import CourseCard from '@/components/programs/CourseCard'
 import ProgramFilters from '@/components/programs/ProgramFilters'
 import ProgramDetails from '@/components/programs/ProgramDetails'
 
+import Api from '../constant/Api'
+
 // Mock API Data
 const mockPrograms = [
   {
@@ -295,9 +297,25 @@ const Programs = () => {
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [activeTab, setActiveTab] = useState('programs')
 
+  // API Data
+  const [programsData, setProgramsData] = useState([]);
+
+  useEffect(() => {
+    const fetchProgramsData = async () => {
+      try {
+        const response = await Api.get('api/programs');
+        setProgramsData(response.data.programs);
+        console.log(response.data.programs);
+      } catch (error) {
+        console.error('Error fetching programs data:', error);
+      }
+    };
+    fetchProgramsData();
+  }, []);
+
   // Filter programs
   const filteredPrograms = useMemo(() => {
-    return mockPrograms.filter(program => {
+    return programsData.filter(program => {
       const matchesSearch = program.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            program.description.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesLevel = selectedLevel === 'All' || program.level === selectedLevel
@@ -306,7 +324,7 @@ const Programs = () => {
       
       return matchesSearch && matchesLevel && matchesSpecialization
     })
-  }, [searchTerm, selectedLevel, selectedSpecialization])
+  }, [searchTerm, selectedLevel, selectedSpecialization, programsData])
 
   // Filter courses
   const filteredCourses = useMemo(() => {

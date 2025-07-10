@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo , useEffect} from 'react';
 import { motion } from 'framer-motion';
 import { Search, XCircle, Calendar, Clock, MapPin, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import LabBookingModal from '../components/lab/LabBookingModal';
+
+import Api from '../constant/Api'
 
 // Mock API data for lab booking
 // Schema:
@@ -157,12 +159,67 @@ const LabBooking = () => {
   const [selectedLab, setSelectedLab] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userBookings, setUserBookings] = useState([]);
+
+
+  const [labs, setLabs] = useState([]);
+  const [bookings, setBookings] = useState([]);
+
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        const response = await Api.get('api/labs');
+        setLabs(response.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchLabs();
+  }, []);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const response = await Api.get('api/lab-bookings');
+        setBookings(response.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchBookings();
+  }, []);
   
   // Filter labs based on search query and selected day
+  // const filteredLabs = useMemo(() => {
+  //   return labs.filter(lab => {
+  //     // Filter by search query
+  //     if (searchQuery) {
+  //       const query = searchQuery.toLowerCase();
+  //       const matchesQuery = (
+  //         lab.name.toLowerCase().includes(query) ||
+  //         lab.description.toLowerCase().includes(query) ||
+  //         lab.location.toLowerCase().includes(query) ||
+  //         lab.facilities.some(facility => facility.toLowerCase().includes(query))
+  //       );
+  //       if (!matchesQuery) return false;
+  //     }
+      
+  //     // Filter by day
+  //     if (selectedDay !== 'all') {
+  //       const hasSelectedDay = lab.availableTimeSlots.some(slot => slot.day === selectedDay);
+  //       if (!hasSelectedDay) return false;
+  //     }
+      
+  //     return true;
+  //   });
+  // }, [searchQuery, selectedDay]);
+
+  
+  // new filter
+  
   const filteredLabs = useMemo(() => {
-    return mockLabData.labs.filter(lab => {
-      // Filter by search query
-      if (searchQuery) {
+    return labs.filter(lab => {
+      // Filter by search query (only if there's a query)
+      if (searchQuery && searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         const matchesQuery = (
           lab.name.toLowerCase().includes(query) ||
@@ -172,21 +229,22 @@ const LabBooking = () => {
         );
         if (!matchesQuery) return false;
       }
-      
+  
       // Filter by day
       if (selectedDay !== 'all') {
         const hasSelectedDay = lab.availableTimeSlots.some(slot => slot.day === selectedDay);
         if (!hasSelectedDay) return false;
       }
-      
+  
       return true;
     });
-  }, [searchQuery, selectedDay]);
+  }, [labs, searchQuery, selectedDay]);
+  
   
   // Get available days from all labs
   const availableDays = useMemo(() => {
     const days = new Set();
-    mockLabData.labs.forEach(lab => {
+    labs.forEach(lab => {
       lab.availableTimeSlots.forEach(slot => {
         days.add(slot.day);
       });
@@ -322,7 +380,7 @@ const LabBooking = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {userBookings.map((booking) => {
-                    const lab = mockLabData.labs.find(l => l.id === booking.labId);
+                    const lab = labs.find(l => l.id === booking.labId);
                     const timeSlot = lab?.availableTimeSlots.find(t => t.id === booking.timeSlotId);
                     
                     return (

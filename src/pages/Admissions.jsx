@@ -1,9 +1,9 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import AdmissionHero from '@/components/admissions/AdmissionHero'
-import ApplicationProcess from '@/components/admissions/ApplicationProcess'
-import RequirementsDeadlines from '@/components/admissions/RequirementsDeadlines'
-import AdmissionFAQs from '@/components/admissions/AdmissionFAQs'
+import AdmissionHero from '../components/admissions/AdmissionHero'
+import ApplicationProcess from '../components/admissions/ApplicationProcess'
+import RequirementsDeadlines from '../components/admissions/RequirementsDeadlines'
+import AdmissionFAQs from '../components/admissions/AdmissionFAQs'
 
 import Api from '../constant/Api'
 import { useEffect, useState } from 'react'

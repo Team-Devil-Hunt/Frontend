@@ -290,25 +290,54 @@ const EquipmentBooking = () => {
   };
   
   // Handle booking submission
-  const handleBookingSubmit = (bookingData) => {
-
-    // In a real app, this would be sent to the backend
-    console.log('Booking submitted:', bookingData);
-    
-    // Add to user bookings (for demo purposes)
-    const newBooking = {
-      id: `book-${Date.now()}`,
-      equipmentId: bookingData.equipmentId,
-      equipmentName: selectedEquipment.name,
-      startTime: bookingData.startTime,
-      endTime: bookingData.endTime,
-      purpose: bookingData.purpose,
-      status: selectedEquipment.requiresApproval ? 'pending' : 'approved',
-      createdAt: new Date().toISOString()
-
-    };
-    
-    setUserBookings([newBooking, ...userBookings]);
+  const handleBookingSubmit = async (bookingData) => {
+    try {
+      // Send booking data to the backend API
+      const response = await Api.post('api/equipment/bookings', {
+        equipmentId: bookingData.equipmentId,
+        startTime: bookingData.startTime,
+        endTime: bookingData.endTime,
+        purpose: bookingData.purpose
+      });
+      
+      console.log('Booking submitted successfully:', response.data);
+      
+      // Add the new booking to the user bookings list
+      const newBooking = {
+        id: response.data.id || `book-${Date.now()}`,
+        equipmentId: bookingData.equipmentId,
+        equipmentName: selectedEquipment.name,
+        startTime: bookingData.startTime,
+        endTime: bookingData.endTime,
+        purpose: bookingData.purpose,
+        status: response.data.status || (selectedEquipment.requiresApproval ? 'pending' : 'approved'),
+        createdAt: response.data.createdAt || new Date().toISOString()
+      };
+      
+      setUserBookings([newBooking, ...userBookings]);
+      
+      // Show success notification
+      alert('Equipment booking submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      
+      // Fallback to local state if API fails
+      const newBooking = {
+        id: `book-${Date.now()}`,
+        equipmentId: bookingData.equipmentId,
+        equipmentName: selectedEquipment.name,
+        startTime: bookingData.startTime,
+        endTime: bookingData.endTime,
+        purpose: bookingData.purpose,
+        status: selectedEquipment.requiresApproval ? 'pending' : 'approved',
+        createdAt: new Date().toISOString()
+      };
+      
+      setUserBookings([newBooking, ...userBookings]);
+      
+      // Show error notification
+      alert('Failed to submit booking to server. Added to local bookings only.');
+    }
   };
   
   // Filter equipment based on category, search query, and availability

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,16 +14,35 @@ const ProgramFilters = ({
   setSelectedSpecialization,
   selectedDifficulty,
   setSelectedDifficulty,
+  selectedYear,
+  setSelectedYear,
   activeFilters,
-  clearFilters
+  clearFilters,
+  programsData = [],
+  coursesData = []
 }) => {
-  const levels = ['All', 'Undergraduate', 'Graduate', 'Postgraduate']
-  const specializations = [
-    'All', 'Software Engineering', 'Data Science', 'Cybersecurity', 
-    'AI & Machine Learning', 'Computer Networks', 'Database Systems',
-    'Web Development', 'Mobile Development', 'Computer Graphics'
-  ]
-  const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced']
+  // Dynamically generate filter options from available data
+  const levels = useMemo(() => {
+    const uniqueLevels = [...new Set(programsData.map(program => program.level))]
+    return ['', ...uniqueLevels]
+  }, [programsData])
+  
+  const specializations = useMemo(() => {
+    const programSpecs = programsData.flatMap(program => program.specializations || [])
+    const courseSpecs = coursesData.map(course => course.specialization)
+    const uniqueSpecs = [...new Set([...programSpecs, ...courseSpecs])]
+    return ['', ...uniqueSpecs]
+  }, [programsData, coursesData])
+  
+  const difficulties = useMemo(() => {
+    const uniqueDifficulties = [...new Set(coursesData.map(course => course.difficulty))]
+    return ['', ...uniqueDifficulties]
+  }, [coursesData])
+  
+  const years = useMemo(() => {
+    const uniqueYears = [...new Set(coursesData.map(course => course.year))].sort((a, b) => a - b)
+    return ['', ...uniqueYears.map(year => year.toString())]
+  }, [coursesData])
 
   return (
     <Card className="mb-6">
@@ -69,7 +88,7 @@ const ProgramFilters = ({
                 className="cursor-pointer hover:bg-primary/10 transition-colors"
                 onClick={() => setSelectedLevel(level)}
               >
-                {level}
+                {level || 'All Levels'}
               </Badge>
             ))}
           </div>
@@ -86,7 +105,7 @@ const ProgramFilters = ({
                 className="cursor-pointer hover:bg-primary/10 transition-colors text-xs"
                 onClick={() => setSelectedSpecialization(spec)}
               >
-                {spec}
+                {spec || 'All Specializations'}
               </Badge>
             ))}
           </div>
@@ -103,7 +122,24 @@ const ProgramFilters = ({
                 className="cursor-pointer hover:bg-primary/10 transition-colors"
                 onClick={() => setSelectedDifficulty(difficulty)}
               >
-                {difficulty}
+                {difficulty || 'All Difficulties'}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        
+        {/* Year Filter */}
+        <div>
+          <h4 className="font-medium text-sm mb-2">Year</h4>
+          <div className="flex flex-wrap gap-2">
+            {years.map((year) => (
+              <Badge
+                key={year}
+                variant={selectedYear === year ? 'default' : 'outline'}
+                className="cursor-pointer hover:bg-primary/10 transition-colors"
+                onClick={() => setSelectedYear(year)}
+              >
+                {year ? `Year ${year}` : 'All Years'}
               </Badge>
             ))}
           </div>

@@ -1,9 +1,9 @@
 import React, { useState, useMemo , useEffect} from 'react';
 import { motion } from 'framer-motion';
 import { Search, Award, Trophy, BookOpen, Medal, Bookmark } from 'lucide-react';
-import AwardCard from '@/components/awards/AwardCard';
-import AwardFilters from '@/components/awards/AwardFilters';
-import AwardDetails from '@/components/awards/AwardDetails';
+import AwardCard from '../components/awards/AwardCard';
+import AwardFilters from '../components/awards/AwardFilters';
+import AwardDetails from '../components/awards/AwardDetails';
 
 import Api from '../constant/Api'
 

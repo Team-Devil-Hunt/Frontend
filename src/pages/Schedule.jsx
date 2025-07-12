@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Calendar, ListFilter, Grid3X3 } from 'lucide-react'
-import ScheduleFilters from '@/components/schedule/ScheduleFilters'
-import ScheduleCard from '@/components/schedule/ScheduleCard'
-import WeeklyView from '@/components/schedule/WeeklyView'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Button } from '../components/ui/button'
+import { Calendar, ListFilter, Grid3X3, RefreshCw, AlertTriangle } from 'lucide-react'
+import ScheduleFilters from '../components/schedule/ScheduleFilters'
+import ScheduleCard from '../components/schedule/ScheduleCard'
+import WeeklyView from '../components/schedule/WeeklyView'
 
 import Api from '../constant/Api'
 
@@ -280,22 +280,35 @@ const Schedule = () => {
     semesters: [],
     rooms: []
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // const [scheduleData, setScheduleData] = useState(mockScheduleData);
+  const fetchScheduleData = async () => {
+    setLoading(true);
+    try {
+      // Use the correct API endpoint as defined in the API schema comment at the top
+      const response = await Api.get('/api/schedule/classes');
+      
+      // Validate response data structure
+      if (response.data && Array.isArray(response.data.classes)) {
+        setScheduleData(response.data);
+        setError(null);
+      } else {
+        throw new Error('Invalid data format received from API');
+      }
+    } catch (error) {
+      console.error('Error fetching schedule data:', error);
+      setError('Failed to load schedule data. Using mock data instead.');
+      // Fallback to mock data if API fails
+      setScheduleData(mockScheduleData);
+    } finally {
+      setLoading(false);
+    }
+  };
   
-
   useEffect(() => {
-      const fetchScheduleData = async () => {
-        try {
-          const response = await Api.get('api/schedule');
-          setScheduleData(response.data);
-          console.log(response.data);
-        } catch (error) {
-          console.log(error);
-        }
-      };
-      fetchScheduleData();
-    }, []);
+    fetchScheduleData();
+  }, []);
   const [filters, setFilters] = useState({
     search: '',
     batch: '',
@@ -309,26 +322,30 @@ const Schedule = () => {
   const activeFiltersCount = Object.values(filters).filter(Boolean).length
   
   // Filter classes based on active filters
-  const filteredClasses = scheduleData.classes.filter(cls => {
+  const filteredClasses = scheduleData?.classes?.filter(cls => {
+    if (!cls) return false;
+    
     return (
-      (filters.batch === '' || cls.batch === filters.batch) &&
-      (filters.semester === '' || cls.semester === filters.semester) &&
-      (filters.room === '' || cls.room === filters.room) &&
+      (filters.batch === '' || (cls.batch && cls.batch === filters.batch)) &&
+      (filters.semester === '' || (cls.semester && cls.semester === filters.semester)) &&
+      (filters.room === '' || (cls.room && cls.room === filters.room)) &&
       (filters.day === '' || 
-        (filters.day === 'Today' && cls.day === getWeekDay(new Date().getDay())) ||
-        (filters.day === 'Tomorrow' && cls.day === getWeekDay((new Date().getDay() + 1) % 7)) ||
+        (filters.day === 'Today' && cls.day && cls.day === weekDays[new Date().getDay()]) ||
+        (filters.day === 'Tomorrow' && cls.day && cls.day === weekDays[(new Date().getDay() + 1) % 7]) ||
         (filters.day === 'This Week')) &&
       (filters.search === '' || 
-        cls.courseName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        cls.courseCode.toLowerCase().includes(filters.search.toLowerCase()) ||
-        cls.instructorName.toLowerCase().includes(filters.search.toLowerCase()))
+        (cls.courseName && cls.courseName.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (cls.courseCode && cls.courseCode.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (cls.instructorName && cls.instructorName.toLowerCase().includes(filters.search.toLowerCase())))
     )
-  })
+  }) || [] 
+  
+  // Define weekdays array for consistent use across components
+  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   
   // Helper function to get weekday name
   function getWeekDay(dayIndex) {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    return days[dayIndex]
+    return weekDays[dayIndex]
   }
   
   // Fetch schedule data from API
@@ -352,77 +369,182 @@ const Schedule = () => {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl md:text-4xl font-bold mb-4">Class Schedule</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
+        <p className="text-gray-600 max-w-2xl mx-auto mb-4">
           View and filter the weekly class schedule for all batches, semesters, and rooms. 
           Use the filters below to find specific classes.
         </p>
+        <button 
+          onClick={fetchScheduleData} 
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          {loading ? 'Refreshing...' : 'Refresh Schedule'}
+        </button>
       </motion.div>
       
-      <ScheduleFilters 
-        filters={filters}
-        setFilters={setFilters}
-        batches={scheduleData.batches}
-        semesters={scheduleData.semesters}
-        rooms={scheduleData.rooms}
-        days={['Today', 'Tomorrow', 'This Week']}
-        activeFiltersCount={activeFiltersCount}
-      />
-      
-      <div className="mb-6 flex justify-between items-center">
-        <h2 className="text-xl font-bold">
-          {filteredClasses.length} {filteredClasses.length === 1 ? 'Class' : 'Classes'} 
-          {activeFiltersCount > 0 ? ' (Filtered)' : ''}
-        </h2>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">View:</span>
-          <Tabs value={view} onValueChange={setView} className="w-[300px]">
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="weekly" className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                <span>Weekly</span>
-              </TabsTrigger>
-              <TabsTrigger value="list" className="flex items-center gap-1">
-                <ListFilter className="w-4 h-4" />
-                <span>List</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
-      
-      {view === 'weekly' ? (
-        <WeeklyView classes={scheduleData.classes} filters={filters} />
-      ) : (
+      {/* Loading State */}
+      {loading && (
         <motion.div 
-          className="space-y-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center justify-center py-12 bg-white rounded-xl shadow-md p-8"
         >
-          {filteredClasses.length > 0 ? (
-            filteredClasses.map((classInfo, index) => (
-              <ScheduleCard key={classInfo.id} classInfo={classInfo} index={index} />
-            ))
-          ) : (
-            <div className="bg-white rounded-lg shadow-md p-12 text-center">
-              <Grid3X3 className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-xl font-bold text-gray-800 mb-2">No Classes Found</h3>
-              <p className="text-gray-600 mb-6">
-                No classes match your current filter criteria. Try adjusting your filters or search terms.
-              </p>
-              <Button onClick={() => setFilters({
-                search: '',
-                batch: '',
-                semester: '',
-                room: '',
-                day: ''
-              })}>
-                Clear All Filters
-              </Button>
-            </div>
-          )}
+          <div className="relative mb-6">
+            <div className="h-16 w-16 rounded-full border-t-4 border-b-4 border-blue-500 animate-spin"></div>
+            <div className="h-16 w-16 rounded-full border-r-4 border-l-4 border-transparent border-opacity-50 animate-pulse absolute top-0"></div>
+          </div>
+          <p className="text-gray-600 text-lg">Loading schedule data...</p>
+          <p className="text-gray-400 text-sm mt-2">This may take a moment</p>
         </motion.div>
+      )}
+      
+      {/* Error State */}
+      {error && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 shadow-sm"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-red-600 mt-1 flex-shrink-0" size={24} />
+              <div>
+                <h3 className="text-lg font-medium text-red-800 mb-1">Error Loading Schedule</h3>
+                <p className="text-red-700">{error}</p>
+                <p className="text-red-600 text-sm mt-2">
+                  This could be due to a network issue or the server might be temporarily unavailable.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={fetchScheduleData}
+              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <RefreshCw size={16} />
+              Retry
+            </button>
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Content when data is loaded */}
+      {!loading && !error && (
+        <div>
+          {/* Filters */}
+          <div className="mb-8">
+            <ScheduleFilters 
+              filters={filters} 
+              setFilters={setFilters} 
+              batches={Array.from(new Set(scheduleData?.classes?.filter(cls => cls && cls.batch).map(cls => cls.batch) || [])).sort()} 
+              semesters={Array.from(new Set(scheduleData?.classes?.filter(cls => cls && cls.semester).map(cls => cls.semester) || [])).sort()} 
+              rooms={Array.from(new Set(scheduleData?.classes?.filter(cls => cls && cls.room).map(cls => cls.room) || [])).sort()} 
+            />
+            
+            {/* Active filters count */}
+            {activeFiltersCount > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between mt-4 p-3 bg-blue-50 text-blue-800 rounded-md"
+              >
+                <span>
+                  <strong>{activeFiltersCount}</strong> active filter{activeFiltersCount !== 1 ? 's' : ''}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFilters({
+                    batch: '',
+                    semester: '',
+                    room: '',
+                    day: '',
+                    search: ''
+                  })}
+                  className="text-blue-700 hover:text-blue-900"
+                >
+                  Clear All
+                </Button>
+              </motion.div>
+            )}
+          </div>
+          
+          {/* Classes count summary */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-6 p-3 bg-white rounded-lg shadow-sm border border-gray-100"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-gray-600">Showing </span>
+                <span className="font-medium">{filteredClasses.length}</span>
+                <span className="text-gray-600"> of </span>
+                <span className="font-medium">{scheduleData?.classes?.length || 0}</span>
+                <span className="text-gray-600"> classes</span>
+              </div>
+              {filteredClasses.length === 0 && activeFiltersCount > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setFilters({
+                    batch: '',
+                    semester: '',
+                    room: '',
+                    day: '',
+                    search: ''
+                  })}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </motion.div>
+          
+          {/* Schedule Display */}
+          <div>
+            <Tabs defaultValue="weekly" className="w-full">
+              <TabsList className="mb-6 w-full max-w-md mx-auto grid grid-cols-2">
+                <TabsTrigger value="weekly" className="flex items-center gap-2">
+                  <Calendar size={16} />
+                  Weekly View
+                </TabsTrigger>
+                <TabsTrigger value="list" className="flex items-center gap-2">
+                  <Grid3X3 size={16} />
+                  List View
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="weekly">
+                <WeeklyView classes={filteredClasses} filters={filters} />
+              </TabsContent>
+              
+              <TabsContent value="list">
+                {filteredClasses.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredClasses.map((cls, index) => (
+                      <ScheduleCard key={`${cls.courseCode || ''}-${index}`} classData={cls} />
+                    ))}
+                  </div>
+                ) : (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-12 bg-white rounded-lg shadow-md"
+                  >
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">No Classes Found</h3>
+                    <p className="text-gray-600 mb-2">
+                      There are no classes in the schedule that match your current filter criteria.
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      Try adjusting your filters or check back later for updated class schedules.
+                    </p>
+                  </motion.div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       )}
     </div>
   )

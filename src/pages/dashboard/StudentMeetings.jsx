@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Search, Filter, Clock, Archive, Plus } from 'lucide-react';
-import MeetingCard from '@/components/meetings/MeetingCard';
-import MeetingFilters from '@/components/meetings/MeetingFilters';
-import MeetingRSVP from '@/components/meetings/MeetingRSVP';
+import MeetingCard from '../../components/meetings/MeetingCard';
+import MeetingFilters from '../../components/meetings/MeetingFilters';
+import MeetingRSVP from '../../components/meetings/MeetingRSVP';
 
 /*
 API Schema:

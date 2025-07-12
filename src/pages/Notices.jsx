@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import NoticeFilters from '@/components/notices/NoticeFilters'
-import NoticeCard from '@/components/notices/NoticeCard'
-import NoticeArchive from '@/components/notices/NoticeArchive'
+import NoticeFilters from '../components/notices/NoticeFilters'
+import NoticeCard from '../components/notices/NoticeCard'
+import NoticeArchive from '../components/notices/NoticeArchive'
 
 /*
 API Schema:

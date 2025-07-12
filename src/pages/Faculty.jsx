@@ -30,12 +30,13 @@
  * }
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Users, Award, BookOpen, Search } from 'lucide-react'
 import FacultyCard from '../components/faculty/FacultyCard'
 import FacultyFilters from '../components/faculty/FacultyFilters'
 import { Badge } from '../components/ui/badge'
+import Api from '../constant/Api'
 
 // Mock API Data
 const mockFacultyData = {
@@ -225,10 +226,33 @@ const Faculty = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState('')
   const [selectedExpertise, setSelectedExpertise] = useState('')
+  const [facultyData, setFacultyData] = useState({ faculty: [], roles: [], expertise_areas: [] })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
+  useEffect(() => {
+    const fetchFacultyData = async () => {
+      try {
+        setLoading(true)
+        const response = await Api.get('api/faculty')
+        setFacultyData(response.data)
+        console.log('Faculty data:', response.data)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching faculty data:', error)
+        setError('Failed to load faculty data. Please try again later.')
+        setLoading(false)
+        // Fallback to mock data if API fails
+        setFacultyData(mockFacultyData)
+      }
+    }
+    
+    fetchFacultyData()
+  }, [])
 
   // Filter faculty based on search and filters
   const filteredFaculty = useMemo(() => {
-    return mockFacultyData.faculty.filter(faculty => {
+    return facultyData.faculty.filter(faculty => {
       const matchesSearch = !searchTerm || 
         faculty.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         faculty.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -287,24 +311,24 @@ const Faculty = () => {
           className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
         >
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{mockFacultyData.faculty.length}</div>
+            <span className="font-bold text-lg">{facultyData.faculty.length}</span> Faculty Members
             <div className="text-gray-600">Total Faculty</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">
-              {mockFacultyData.faculty.filter(f => f.role === 'Professor').length}
+              {facultyData.faculty.filter(f => f.role === 'Professor').length}
             </div>
             <div className="text-gray-600">Professors</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">
-              {mockFacultyData.faculty.reduce((sum, f) => sum + f.publications, 0)}
+              {facultyData.faculty.reduce((sum, f) => sum + f.publications, 0)}
             </div>
             <div className="text-gray-600">Publications</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">
-              {Math.round(mockFacultyData.faculty.reduce((sum, f) => sum + f.experience, 0) / mockFacultyData.faculty.length)}
+              {Math.round(facultyData.faculty.reduce((sum, f) => sum + f.experience, 0) / facultyData.faculty.length)}
             </div>
             <div className="text-gray-600">Avg. Experience</div>
           </div>
@@ -323,20 +347,26 @@ const Faculty = () => {
             setSelectedRole={setSelectedRole}
             selectedExpertise={selectedExpertise}
             setSelectedExpertise={setSelectedExpertise}
-            roles={mockFacultyData.roles}
-            expertiseAreas={mockFacultyData.expertiseAreas}
-            totalResults={mockFacultyData.faculty.length}
+            roles={facultyData.roles}
+            expertiseAreas={facultyData.expertise_areas}
+            totalResults={facultyData.faculty.length}
             filteredResults={filteredFaculty.length}
           />
         </motion.div>
 
-        {/* Faculty Grid */}
-        {filteredFaculty.length > 0 ? (
+        {/* Faculty Cards */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center p-8 text-red-500">{error}</div>
+        ) : filteredFaculty.length > 0 ? (
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
           >
             {filteredFaculty.map((faculty) => (
               <FacultyCard

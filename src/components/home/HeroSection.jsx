@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '../ui/button'
 
-const HeroSection = ({ data, variants }) => {
+const HeroSection = ({ data, variants, loading = false }) => {
   return (
     <motion.section 
       className="relative py-20 px-4 sm:px-6 lg:px-8"

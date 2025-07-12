@@ -4,7 +4,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, MapPin, Users, BookOpen, CalendarDays } from 'lucide-react'
 
-const ScheduleCard = ({ classInfo, index }) => {
+const ScheduleCard = ({ classData, index = 0 }) => {
+  // Ensure we have valid data
+  if (!classData) return null;
   // Determine card border color based on class type
   const getBorderColor = (type) => {
     switch (type) {
@@ -35,53 +37,73 @@ const ScheduleCard = ({ classInfo, index }) => {
     }
   }
 
+  // Extract data with fallbacks for missing values
+  const {
+    type = 'Other',
+    courseCode = 'Unknown',
+    courseName = 'Untitled Course',
+    status,
+    batch = 'N/A',
+    semester = 'N/A',
+    startTime = 'TBA',
+    endTime = 'TBA',
+    day = 'TBA',
+    room = 'TBA',
+    instructorName = 'TBA',
+    instructorDesignation = ''
+  } = classData;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
     >
-      <Card className={`border-l-4 ${getBorderColor(classInfo.type)} hover:shadow-md transition-shadow`}>
+      <Card className={`border-l-4 ${getBorderColor(type)} hover:shadow-md transition-shadow`}>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-lg">{classInfo.courseCode} - {classInfo.courseName}</h3>
-                {getStatusBadge(classInfo.status)}
+                <h3 className="font-bold text-lg">{courseCode}{courseName !== 'Untitled Course' ? ` - ${courseName}` : ''}</h3>
+                {status && getStatusBadge(status)}
               </div>
               
               <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
                 <BookOpen className="w-4 h-4" />
-                <span>{classInfo.type}</span>
+                <span>{type}</span>
                 <span className="mx-2">•</span>
                 <Users className="w-4 h-4" />
-                <span>Batch {classInfo.batch}</span>
+                <span>Batch {batch}</span>
                 <span className="mx-2">•</span>
-                <span>Semester {classInfo.semester}</span>
+                <span>Semester {semester}</span>
               </div>
               
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-1 text-sm">
                   <Clock className="w-4 h-4 text-gray-500" />
-                  <span>{classInfo.startTime} - {classInfo.endTime}</span>
+                  <span>{startTime}{endTime !== 'TBA' ? ` - ${endTime}` : ''}</span>
                 </div>
                 
                 <div className="flex items-center gap-1 text-sm">
                   <CalendarDays className="w-4 h-4 text-gray-500" />
-                  <span>{classInfo.day}</span>
+                  <span>{day}</span>
                 </div>
                 
                 <div className="flex items-center gap-1 text-sm">
                   <MapPin className="w-4 h-4 text-gray-500" />
-                  <span>Room {classInfo.room}</span>
+                  <span>Room {room}</span>
                 </div>
               </div>
             </div>
             
-            <div className="text-right">
-              <div className="text-sm font-medium">{classInfo.instructorName}</div>
-              <div className="text-xs text-gray-500">{classInfo.instructorDesignation}</div>
-            </div>
+            {instructorName && (
+              <div className="text-right">
+                <div className="text-sm font-medium">{instructorName}</div>
+                {instructorDesignation && (
+                  <div className="text-xs text-gray-500">{instructorDesignation}</div>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

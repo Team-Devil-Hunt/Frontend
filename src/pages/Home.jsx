@@ -206,26 +206,69 @@ const Home = () => {
   }
 
 
+  const [overviewData, setOverviewData] = useState(mockOverviewData);
   const [announcementsData, setAnnouncementsData] = useState([]);
+  const [quickLinksData, setQuickLinksData] = useState({ links: [] });
+  const [loading, setLoading] = useState({
+    overview: true,
+    announcements: true,
+    quickLinks: true
+  });
+
   useEffect(() => {
-    const fetchAnnouncementsData = async () => {
+    const fetchOverviewData = async () => {
       try {
-        const response = await Api.get('api/announcements');
-        setAnnouncementsData(response.data);
-        console.log(response.data);
+        setLoading(prev => ({ ...prev, overview: true }));
+        const response = await Api.get('api/overview');
+        setOverviewData(response.data);
+        console.log('Overview data:', response.data);
       } catch (error) {
         console.error('Error fetching overview data:', error);
+        // Fallback to mock data if API fails
+      } finally {
+        setLoading(prev => ({ ...prev, overview: false }));
       }
     };
+
+    const fetchAnnouncementsData = async () => {
+      try {
+        setLoading(prev => ({ ...prev, announcements: true }));
+        const response = await Api.get('api/announcements');
+        setAnnouncementsData(response.data);
+        console.log('Announcements data:', response.data);
+      } catch (error) {
+        console.error('Error fetching announcements data:', error);
+      } finally {
+        setLoading(prev => ({ ...prev, announcements: false }));
+      }
+    };
+
+    const fetchQuickLinksData = async () => {
+      try {
+        setLoading(prev => ({ ...prev, quickLinks: true }));
+        const response = await Api.get('api/quick-links');
+        setQuickLinksData(response.data);
+        console.log('Quick links data:', response.data);
+      } catch (error) {
+        console.error('Error fetching quick links data:', error);
+        // Fallback to mock data if API fails
+        setQuickLinksData(mockQuickLinksData);
+      } finally {
+        setLoading(prev => ({ ...prev, quickLinks: false }));
+      }
+    };
+
+    fetchOverviewData();
     fetchAnnouncementsData();
+    fetchQuickLinksData();
   }, []);
   
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <HeroSection data={mockOverviewData} variants={variants} />
-      <AnnouncementsSection data={announcementsData} variants={variants} />
-      <QuickLinksSection data={mockQuickLinksData} variants={variants} />
+      <HeroSection data={overviewData} variants={variants} loading={loading.overview} />
+      <AnnouncementsSection data={announcementsData} variants={variants} loading={loading.announcements} />
+      <QuickLinksSection data={quickLinksData} variants={variants} loading={loading.quickLinks} />
       <CallToActionSection variants={variants} />
     </div>
   )

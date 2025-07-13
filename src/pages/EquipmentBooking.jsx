@@ -260,26 +260,53 @@ const EquipmentBooking = () => {
   useEffect(() => {
     const fetchEquipmentData = async () => {
       try {
-        const [catRes , eqRes , bookingRes] = await Promise.all([
-          Api.get('api/equipment/categories'),
-          Api.get('api/equipment/'),
-          Api.get('api/equipment/bookings')
+        const [catRes, eqRes, bookingRes] = await Promise.all([
+          Api.get('/api/equipment/categories'),
+          Api.get('/api/equipment/'),
+          Api.get('/api/equipment/bookings').catch(() => ({ data: [] })) // Handle unauthorized gracefully
         ]);
+        
+        // Transform equipment data to match frontend expectations
+        const transformedEquipment = eqRes.data.map(item => ({
+          ...item,
+          categoryId: item.category_id, // Map category_id to categoryId
+          requiresApproval: item.requires_approval // Map requires_approval to requiresApproval
+        }));
+        
         const combinedData = {
-          categories: catRes.data,
-          equipment: eqRes.data,
-          bookings: bookingRes.data
+          categories: catRes.data || [],
+          equipment: transformedEquipment || [],
+          bookings: bookingRes.data || []
         };
         setMockEquipmentData(combinedData);
+        console.log('Fetched equipment data:', combinedData);
       } catch (error) {
         console.error('Error fetching equipment data:', error);
+        // Set default empty data structure if API fails
+        setMockEquipmentData({
+          categories: [],
+          equipment: [],
+          bookings: []
+        });
       }
     };
     fetchEquipmentData();
   }, []);
 
+  // Load user bookings when data is available
   useEffect(() => {
-    console.log('Updated mockEquipmentData:', mockEquipmentData);
+    if (mockEquipmentData?.bookings?.length > 0) {
+      // Transform bookings to match frontend expectations
+      const transformedBookings = mockEquipmentData.bookings.map(booking => {
+        // Find equipment name
+        const equipment = mockEquipmentData.equipment.find(eq => eq.id === booking.equipmentId);
+        return {
+          ...booking,
+          equipmentName: equipment ? equipment.name : 'Unknown Equipment'
+        };
+      });
+      setUserBookings(transformedBookings);
+    }
   }, [mockEquipmentData]);
   
   
@@ -293,7 +320,7 @@ const EquipmentBooking = () => {
   const handleBookingSubmit = async (bookingData) => {
     try {
       // Send booking data to the backend API
-      const response = await Api.post('api/equipment/bookings', {
+      const response = await Api.post('/api/equipment/bookings', {
         equipmentId: bookingData.equipmentId,
         startTime: bookingData.startTime,
         endTime: bookingData.endTime,
@@ -313,6 +340,9 @@ const EquipmentBooking = () => {
         status: response.data.status || (selectedEquipment.requiresApproval ? 'pending' : 'approved'),
         createdAt: response.data.createdAt || new Date().toISOString()
       };
+      
+      // Refresh equipment data to get updated availability
+      fetchEquipmentData();
       
       setUserBookings([newBooking, ...userBookings]);
       
@@ -337,6 +367,39 @@ const EquipmentBooking = () => {
       
       // Show error notification
       alert('Failed to submit booking to server. Added to local bookings only.');
+    }
+  };
+  
+  // Function to fetch equipment data
+  const fetchEquipmentData = async () => {
+    try {
+      const [catRes, eqRes, bookingRes] = await Promise.all([
+        Api.get('/api/equipment/categories'),
+        Api.get('/api/equipment/'),
+        Api.get('/api/equipment/bookings').catch(() => ({ data: [] })) // Handle unauthorized gracefully
+      ]);
+      
+      // Transform equipment data to match frontend expectations
+      const transformedEquipment = eqRes.data.map(item => ({
+        ...item,
+        categoryId: item.category_id, // Map category_id to categoryId
+        requiresApproval: item.requires_approval // Map requires_approval to requiresApproval
+      }));
+      
+      const combinedData = {
+        categories: catRes.data || [],
+        equipment: transformedEquipment || [],
+        bookings: bookingRes.data || []
+      };
+      setMockEquipmentData(combinedData);
+    } catch (error) {
+      console.error('Error fetching equipment data:', error);
+      // Set default empty data structure if API fails
+      setMockEquipmentData({
+        categories: [],
+        equipment: [],
+        bookings: []
+      });
     }
   };
   
@@ -377,8 +440,8 @@ const EquipmentBooking = () => {
         const q = searchQuery.toLowerCase();
         return (
           item.name.toLowerCase().includes(q) ||
-          item.description.toLowerCase().includes(q) ||
-          item.specifications.toLowerCase().includes(q)
+          (item.description && item.description.toLowerCase().includes(q)) ||
+          (item.specifications && item.specifications.toLowerCase().includes(q))
         );
       }
       return true;
@@ -388,12 +451,14 @@ const EquipmentBooking = () => {
   
   // Get category name by ID
   const getCategoryName = (categoryId) => {
+    if (!mockEquipmentData?.categories) return 'Unknown';
     const category = mockEquipmentData.categories.find(cat => cat.id === categoryId);
     return category ? category.name : 'Unknown';
   };
   
   // Get category icon by ID
   const getCategoryIcon = (categoryId) => {
+    if (!mockEquipmentData?.categories) return <Cpu size={20} />;
     const category = mockEquipmentData.categories.find(cat => cat.id === categoryId);
     if (!category) return <Cpu size={20} />;
     
@@ -411,7 +476,7 @@ const EquipmentBooking = () => {
   
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 mt-16">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Equipment Booking</h1>
           <p className="text-gray-600">
@@ -452,11 +517,11 @@ const EquipmentBooking = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">All Categories</option>
-                {mockEquipmentData?.categories.map(category => (
+                {mockEquipmentData?.categories?.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
-                ))}
+                )) || <option value="all">All Categories</option>}
               </select>
             </div>
           </div>

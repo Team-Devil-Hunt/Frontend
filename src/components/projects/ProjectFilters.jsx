@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Filter, X, Tags, Calendar, User, Flame, GraduationCap } from 'lucide-react'
 
-const ProjectFilters = ({ projects, filters, onFiltersChange }) => {
-  // Extract unique values from projects
-  const years = [...new Set(projects.map(p => p.year))].sort((a, b) => b - a)
-  const categories = [...new Set(projects.map(p => p.category))]
-  const supervisors = [...new Set(projects.map(p => p.supervisor))]
+const ProjectFilters = ({ availableFilters, filters, onFiltersChange }) => {
+  // Use the filter options provided by the parent component
+  const years = availableFilters?.years || []
+  const categories = availableFilters?.categories || []
+  const supervisors = availableFilters?.supervisors || []
   
   // Toggle a filter array value
   const toggleArrayFilter = (filterName, value) => {
@@ -29,23 +29,21 @@ const ProjectFilters = ({ projects, filters, onFiltersChange }) => {
     })
   }
 
-  // Toggle single boolean filter
-  const toggleBooleanFilter = (filterName) => {
+  // Toggle project type filter (radio button behavior)
+  const setProjectType = (type) => {
     onFiltersChange(prev => ({
       ...prev,
-      [filterName]: !prev[filterName]
+      type: prev.type === type ? '' : type
     }))
   }
   
   // Clear all filters
   const clearAllFilters = () => {
     onFiltersChange({
-      search: '',
       years: [],
       categories: [],
       supervisors: [],
-      studentOnly: false,
-      facultyOnly: false
+      type: ''
     })
   }
 
@@ -117,34 +115,31 @@ const ProjectFilters = ({ projects, filters, onFiltersChange }) => {
   }
 
   // Check if any filters are active
-  const hasActiveFilters = filters.search !== '' || 
+  const hasActiveFilters = 
     filters.years.length > 0 ||
     filters.categories.length > 0 ||
     filters.supervisors.length > 0 ||
-    filters.studentOnly ||
-    filters.facultyOnly
+    filters.type !== ''
   
   const getActiveFiltersCount = () => {
     let count = 0
-    if (filters.search !== '') count++
     if (filters.years.length > 0) count++
     if (filters.categories.length > 0) count++
     if (filters.supervisors.length > 0) count++
-    if (filters.studentOnly) count++
-    if (filters.facultyOnly) count++
+    if (filters.type !== '') count++
     return count
   }
 
   return (
     <motion.div 
-      className="bg-white p-4 sm:p-5 rounded-lg shadow-md mb-6"
-      initial={{ opacity: 0, y: -20 }}
+      className="bg-white p-5 sm:p-6 rounded-lg shadow-sm border border-slate-100 mb-6 max-w-4xl mx-auto"
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       {/* Filter Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-        <h2 className="text-lg font-bold mb-2 sm:mb-0">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-bold">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
             Project Filters
           </span>
@@ -155,109 +150,162 @@ const ProjectFilters = ({ projects, filters, onFiltersChange }) => {
           )}
         </h2>
         
-        {/* Search Bar */}
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-          <Input
-            placeholder="Search projects..."
-            value={filters.search}
-            onChange={(e) => onFiltersChange({...filters, search: e.target.value})}
-            className="pl-8"
-          />
-        </div>
+        {/* Clear Filters Button */}
+        {hasActiveFilters && (
+          <Button 
+            variant="ghost" 
+            onClick={clearAllFilters}
+            className="flex items-center gap-2 text-red-600 hover:bg-red-50"
+            size="sm"
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear Filters
+          </Button>
+        )}
       </div>
       
       {/* Filters */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Year Filter */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-            <Calendar className="w-4 h-4" />
-            <span>Filter by Year</span>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm font-medium text-gray-700 mb-2 pb-1 border-b">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              <span>Filter by Year</span>
+            </div>
+            {filters.years.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-6 text-xs text-blue-600 hover:text-blue-800 p-0"
+                onClick={() => onFiltersChange({...filters, years: []})}
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {years.map(year => (
+            {years.length > 0 ? years.map(year => (
               <Badge 
                 key={year} 
                 onClick={() => toggleArrayFilter('years', year)}
-                className={`cursor-pointer ${getYearBadgeClasses(year)}`}
+                className={`cursor-pointer transition-colors ${getYearBadgeClasses(year)}`}
               >
                 {year}
               </Badge>
-            ))}
+            )) : (
+              <p className="text-sm text-gray-500 italic">No years available</p>
+            )}
           </div>
         </div>
         
         {/* Category Filter */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-            <Tags className="w-4 h-4" />
-            <span>Filter by Topic/Category</span>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm font-medium text-gray-700 mb-2 pb-1 border-b">
+            <div className="flex items-center gap-2">
+              <Tags className="w-4 h-4 text-purple-600" />
+              <span>Filter by Topic/Category</span>
+            </div>
+            {filters.categories.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-6 text-xs text-purple-600 hover:text-purple-800 p-0"
+                onClick={() => onFiltersChange({...filters, categories: []})}
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {categories.map(category => (
+            {categories.length > 0 ? categories.map(category => (
               <Badge 
                 key={category} 
                 onClick={() => toggleArrayFilter('categories', category)}
-                className={`cursor-pointer ${getCategoryBadgeClasses(category)}`}
+                className={`cursor-pointer transition-colors ${getCategoryBadgeClasses(category)}`}
               >
                 {formatCategoryName(category)}
               </Badge>
-            ))}
+            )) : (
+              <p className="text-sm text-gray-500 italic">No categories available</p>
+            )}
           </div>
         </div>
         
         {/* Supervisor Filter */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-            <User className="w-4 h-4" />
-            <span>Filter by Supervisor</span>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm font-medium text-gray-700 mb-2 pb-1 border-b">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-green-600" />
+              <span>Filter by Supervisor</span>
+            </div>
+            {filters.supervisors.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-6 text-xs text-green-600 hover:text-green-800 p-0"
+                onClick={() => onFiltersChange({...filters, supervisors: []})}
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {supervisors.map(supervisor => (
+          <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
+            {supervisors.length > 0 ? supervisors.map(supervisor => (
               <Badge 
                 key={supervisor} 
                 onClick={() => toggleArrayFilter('supervisors', supervisor)}
-                className={`cursor-pointer ${getSupervisorBadgeClasses(supervisor)}`}
+                className={`cursor-pointer transition-colors ${getSupervisorBadgeClasses(supervisor)}`}
               >
                 {supervisor}
               </Badge>
-            ))}
+            )) : (
+              <p className="text-sm text-gray-500 italic">No supervisors available</p>
+            )}
           </div>
         </div>
         
         {/* Project Type Filters */}
-        <div className="flex flex-wrap gap-3">
-          <Badge 
-            onClick={() => toggleBooleanFilter('studentOnly')}
-            className={`cursor-pointer ${filters.studentOnly ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-800'}`}
-          >
-            <GraduationCap className="w-4 h-4 mr-1" />
-            Student Projects Only
-          </Badge>
-          
-          <Badge 
-            onClick={() => toggleBooleanFilter('facultyOnly')}
-            className={`cursor-pointer ${filters.facultyOnly ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'}`}
-          >
-            <Flame className="w-4 h-4 mr-1" />
-            Faculty Research Only
-          </Badge>
-        </div>
-        
-        {/* Filter Actions */}
-        {hasActiveFilters && (
-          <div className="pt-2">
-            <Button 
-              variant="ghost" 
-              onClick={clearAllFilters}
-              className="flex items-center gap-2 text-red-600 hover:bg-red-50"
-            >
-              <X className="w-4 h-4" />
-              Clear All Filters
-            </Button>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm font-medium text-gray-700 mb-2 pb-1 border-b">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-amber-600" />
+              <span>Project Type</span>
+            </div>
+            {filters.type !== '' && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-6 text-xs text-amber-600 hover:text-amber-800 p-0"
+                onClick={() => onFiltersChange({...filters, type: ''})}
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
-        )}
+          <div className="flex flex-col gap-2">
+            <div className="text-xs text-gray-500 mb-1 italic">Select one option:</div>
+            <Badge 
+              onClick={() => setProjectType('student')}
+              className={`cursor-pointer w-full justify-center py-1.5 transition-colors ${filters.type === 'student' ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-800'}`}
+            >
+              <GraduationCap className="w-4 h-4 mr-1.5" />
+              Student Projects Only
+            </Badge>
+            
+            <Badge 
+              onClick={() => setProjectType('faculty')}
+              className={`cursor-pointer w-full justify-center py-1.5 transition-colors ${filters.type === 'faculty' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'}`}
+            >
+              <Flame className="w-4 h-4 mr-1.5" />
+              Faculty Research Only
+            </Badge>
+          </div>
+        </div>
       </div>
     </motion.div>
   )

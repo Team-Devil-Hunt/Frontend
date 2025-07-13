@@ -46,12 +46,12 @@ Response: {
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '../components/ui/button'
-import { Calendar, Users, Trophy, Sparkles } from 'lucide-react'
+import { Calendar, Users, Trophy, Sparkles, Loader2 } from 'lucide-react'
 import EventCard from '../components/events/EventCard'
 import EventFilters from '../components/events/EventFilters'
 import EventRegistrationModal from '../components/events/EventRegistrationModal'
-
-import Api from '../constant/Api'
+import axios from 'axios'
+import { BaseUrl } from '../services/BaseUrl'
 
 
 // Mock API Data
@@ -203,28 +203,50 @@ import Api from '../constant/Api'
 // ]
 
 const Events = () => {
-
-  //real api call
-
-  // const [realEvents, setRealEvents] = useState([])
-
-
-
   const [events, setEvents] = useState([])
   const [filteredEvents, setFilteredEvents] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchEventsData = async () => {
-          try {
-            const response = await Api.get('api/events');
-            setEvents(response.data);
-            setFilteredEvents(response.data);
-            console.log(response.data);
-          } catch (error) {
-            console.error('Error fetching overview data:', error);
-          }
-        };
-        fetchEventsData();
+      setIsLoading(true)
+      try {
+        const response = await axios.get(`${BaseUrl}/api/events`)
+        
+        // Transform the data if needed to match frontend expectations
+        const transformedEvents = response.data.map(event => ({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          type: event.type.toLowerCase(),
+          status: event.status.toLowerCase(),
+          startDate: event.startDate,
+          endDate: event.endDate,
+          venue: event.venue,
+          speaker: event.speaker,
+          organizer: event.organizer,
+          maxParticipants: event.maxParticipants,
+          registeredCount: event.registeredCount,
+          registrationRequired: event.registrationRequired,
+          registrationDeadline: event.registrationDeadline,
+          fee: event.fee,
+          externalLink: event.externalLink,
+          tags: event.tags || []
+        }))
+        
+        setEvents(transformedEvents)
+        setFilteredEvents(transformedEvents)
+        setError(null)
+      } catch (error) {
+        console.error('Error fetching events data:', error)
+        setError('Failed to load events. Please try again later.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchEventsData()
   }, [])
   const [filters, setFilters] = useState({
     search: '',
@@ -294,9 +316,29 @@ const Events = () => {
   }
 
   // Handle registration submission
-  const handleRegistrationSubmit = (registrationData) => {
-    console.log('Registration submitted:', registrationData)
-    // Here you would typically send the data to your API
+  const handleRegistrationSubmit = async (registrationData) => {
+    try {
+      if (!selectedEvent) return;
+      
+      const response = await axios.post(
+        `${BaseUrl}/api/events/${selectedEvent.id}/register`,
+        registrationData
+      );
+      
+      console.log('Registration submitted:', response.data);
+      
+      // Close the modal and show success message
+      setIsRegistrationModalOpen(false);
+      setSelectedEvent(null);
+      
+      // You could add a toast notification here for success
+      alert('Registration successful! Check your email for confirmation.');
+      
+    } catch (error) {
+      console.error('Error submitting registration:', error);
+      // You could add error handling here
+      alert('Registration failed. Please try again later.');
+    }
   }
 
   // Get upcoming events count
@@ -385,7 +427,32 @@ const Events = () => {
 
         {/* Events Grid */}
         <div className="space-y-6">
-          {filteredEvents.length > 0 ? (
+          {isLoading ? (
+            <motion.div 
+              className="text-center py-16"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <Loader2 className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
+              <h3 className="text-xl font-semibold text-gray-600">Loading events...</h3>
+            </motion.div>
+          ) : error ? (
+            <motion.div 
+              className="text-center py-16"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-4">
+                <p>{error}</p>
+              </div>
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </motion.div>
+          ) : filteredEvents.length > 0 ? (
             filteredEvents.map((event, index) => (
               <EventCard
                 key={event.id}

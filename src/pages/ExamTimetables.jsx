@@ -196,11 +196,47 @@ const ExamTimetables = () => {
 
   const fetchExamsData = async () => {
     try {
-      const response = await Api.get('api/exams');
-      setExams(response.data);
-      console.log(response.data);
+      console.log('Fetching exams data from API...');
+      const response = await Api.get('/api/exams');
+      console.log('Raw API response:', response);
+      
+      // Check if response.data is already an array or if it's wrapped in an object
+      let examsData = [];
+      if (Array.isArray(response.data)) {
+        examsData = response.data;
+        console.log('Response data is an array with length:', examsData.length);
+      } else if (response.data && typeof response.data === 'object') {
+        // Check if the data is nested under a property
+        const possibleArrayProps = Object.keys(response.data).filter(key => 
+          Array.isArray(response.data[key]));
+        
+        if (possibleArrayProps.length > 0) {
+          examsData = response.data[possibleArrayProps[0]];
+          console.log(`Found exams array under property '${possibleArrayProps[0]}' with length:`, examsData.length);
+        } else {
+          console.warn('Response data is an object but contains no array properties:', response.data);
+        }
+      } else {
+        console.warn('Unexpected response format:', response.data);
+      }
+      
+      setExams(examsData);
+      console.log('Exams state updated with:', examsData);
     } catch (error) {
       console.error('Error fetching exams data:', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Error request:', error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error message:', error.message);
+      }
     }
   };
 

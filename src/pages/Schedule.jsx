@@ -286,8 +286,8 @@ const Schedule = () => {
   const fetchScheduleData = async () => {
     setLoading(true);
     try {
-      // Use the correct API endpoint as defined in the API schema comment at the top
-      const response = await Api.get('/api/schedule/classes');
+      // Use the correct API endpoint as defined in the backend
+      const response = await Api.get('/api/schedule');
       
       // Validate response data structure
       if (response.data && Array.isArray(response.data.classes)) {
@@ -504,16 +504,8 @@ const Schedule = () => {
           {/* Schedule Display */}
           <div>
             <Tabs defaultValue="weekly" className="w-full">
-              <TabsList className="mb-6 w-full max-w-md mx-auto grid grid-cols-2">
-                <TabsTrigger value="weekly" className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  Weekly View
-                </TabsTrigger>
-                <TabsTrigger value="list" className="flex items-center gap-2">
-                  <Grid3X3 size={16} />
-                  List View
-                </TabsTrigger>
-              </TabsList>
+              
+              
               
               <TabsContent value="weekly">
                 <WeeklyView classes={filteredClasses} filters={filters} />

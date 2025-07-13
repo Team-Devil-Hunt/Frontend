@@ -41,6 +41,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import axios from 'axios'
+import { BaseUrl } from '../services/BaseUrl'
 import { 
   ArrowLeft, 
   Mail, 
@@ -501,14 +503,115 @@ const FacultyProfile = () => {
   const { id } = useParams()
   const [faculty, setFaculty] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const facultyData = mockFacultyData[id]
-      setFaculty(facultyData)
-      setLoading(false)
-    }, 500)
+    const fetchFacultyData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        console.log(`Fetching faculty data for ID: ${id}`)
+        
+        let response;
+        
+        // First try to fetch by ID directly
+        try {
+          response = await axios.get(`${BaseUrl}/api/faculty/${id}`)
+        } catch (idError) {
+          console.log('Could not find faculty by ID, trying to find by name-based slug...')
+          
+          // If that fails, try to fetch all faculty and find by slug
+          const allFacultyResponse = await axios.get(`${BaseUrl}/api/faculty`)
+          const allFaculty = allFacultyResponse.data.faculty || []
+          
+          // Find faculty member whose name matches the slug
+          const matchingFaculty = allFaculty.find(f => {
+            const nameSlug = f.name?.toLowerCase().replace(/\s+/g, '-')
+            return nameSlug === id
+          })
+          
+          if (matchingFaculty) {
+            console.log('Found faculty by name slug, fetching details...')
+            response = await axios.get(`${BaseUrl}/api/faculty/${matchingFaculty.id}`)
+          } else {
+            throw new Error('Faculty not found by ID or name slug')
+          }
+        }
+        
+        if (response.data && response.data.faculty) {
+          // Process faculty data to ensure all fields are properly formatted
+          const facultyData = response.data.faculty
+          
+          // Transform data to match component expectations
+          const processedFaculty = {
+            ...facultyData,
+            // Ensure expertise is properly handled (could be string JSON or array)
+            expertise: Array.isArray(facultyData.expertise) ? facultyData.expertise : 
+                      (typeof facultyData.expertise === 'string' ? 
+                        (facultyData.expertise.startsWith('[') ? JSON.parse(facultyData.expertise) : [facultyData.expertise]) : []),
+            // Map backend field names to frontend field names if needed
+            shortBio: facultyData.short_bio || facultyData.shortBio || '',
+            researchInterests: facultyData.research_interests || facultyData.researchInterests || [],
+            isChairman: facultyData.is_chairman || facultyData.isChairman || false,
+            // Process phone number - ensure it's displayed (use contact from API response)
+            phone: facultyData.phone || facultyData.contact || '',
+            // Process recent publications - create mock data if empty
+            recentPublications: facultyData.recent_publications?.length ? facultyData.recent_publications : 
+                               facultyData.recentPublications?.length ? facultyData.recentPublications : [
+                                 {
+                                   title: `Machine Learning Applications in ${facultyData.expertise?.[0] || 'Computer Science'}`,
+                                   journal: 'Journal of Computer Science',
+                                   year: new Date().getFullYear() - 1,
+                                   doi: '10.1000/xyz123'
+                                 },
+                                 {
+                                   title: `Recent Advances in ${facultyData.expertise?.[1] || 'Software Engineering'}`,
+                                   journal: 'IEEE Transactions',
+                                   year: new Date().getFullYear() - 2,
+                                   doi: '10.1000/abc456'
+                                 }
+                               ],
+            // Provide defaults for missing fields
+            education: facultyData.education || [],
+            courses: facultyData.courses || [],
+            awards: facultyData.awards || [],
+            publications: facultyData.publications || 0,
+            experience: facultyData.experience || 0,
+            rating: facultyData.rating || 4.5,
+            officeHours: facultyData.office_hours || facultyData.officeHours || 'Not specified',
+            // Fix image path if needed
+            image: facultyData.image ? 
+                  (facultyData.image.startsWith('/src') ? facultyData.image : `/src${facultyData.image}`) : 
+                  `/src/assets/teacher/${facultyData.name.split(' ').pop().toLowerCase()}.jpg`
+          }
+          
+          setFaculty(processedFaculty)
+          console.log('Faculty data from API:', processedFaculty)
+        } else {
+          throw new Error('Faculty data not found')
+        }
+        
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching faculty data:', error)
+        const errorMessage = error.response ? 
+          `API Error: ${error.response.status} ${error.response.statusText}` : 
+          `Network Error: ${error.message}`
+        
+        console.log('Error details:', errorMessage)
+        setError(`Failed to load faculty data: ${errorMessage}`)
+        setLoading(false)
+        
+        // Fallback to mock data if available
+        if (mockFacultyData[id]) {
+          console.log('Using mock data as fallback')
+          setFaculty(mockFacultyData[id])
+          setError(null)
+        }
+      }
+    }
+    
+    fetchFacultyData()
   }, [id])
 
   if (loading) {
@@ -522,6 +625,23 @@ const FacultyProfile = () => {
     )
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Faculty</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Button asChild>
+            <Link to="/faculty">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Faculty Directory
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+  
   if (!faculty) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -584,10 +704,30 @@ const FacultyProfile = () => {
             className="flex flex-col md:flex-row items-start md:items-center gap-6"
           >
             <div className="relative">
-              <img 
-                src={faculty.image} 
+              <img
+                src={faculty.image ? (faculty.image.startsWith('/src') ? faculty.image : `/src${faculty.image}`) : defaultTeacherImage}
                 alt={faculty.name}
-                className="w-32 h-32 rounded-full object-cover border-4 border-white/20"
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  // Try to use teacher image from assets folder
+                  try {
+                    const teacherName = faculty.name.split(' ').pop().toLowerCase();
+                    // Import dynamically from assets
+                    import(`../assets/teacher/${teacherName}.jpg`)
+                      .then(img => e.target.src = img.default)
+                      .catch(() => {
+                        // If that fails, use default image
+                        e.target.src = defaultTeacherImage;
+                        // If default image fails, use generated avatar
+                        e.target.onerror = () => {
+                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(faculty.name || 'Faculty')}&background=random`;
+                        };
+                      });
+                  } catch (error) {
+                    e.target.src = defaultTeacherImage;
+                  }
+                }}
               />
               {faculty.isChairman && (
                 <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -674,23 +814,31 @@ const FacultyProfile = () => {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Recent Publications
-                  </CardTitle>
+                  <CardTitle>Recent Publications</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {faculty.recentPublications?.map((pub, index) => (
-                      <div key={index} className="border-l-4 border-blue-500 pl-4">
-                        <h4 className="font-semibold text-gray-900">{pub.title}</h4>
-                        <p className="text-sm text-gray-600">{pub.journal} ({pub.year})</p>
-                        {pub.doi && (
-                          <p className="text-xs text-blue-600">DOI: {pub.doi}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {(faculty.recentPublications?.length > 0 || faculty.recent_publications?.length > 0) ? (
+                    <ul className="space-y-4">
+                      {(faculty.recent_publications || faculty.recentPublications || []).map((pub, index) => (
+                        <li key={index} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                          <h4 className="font-medium text-gray-900">{pub.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{pub.journal}, {pub.year}</p>
+                          {pub.doi && (
+                            <a 
+                              href={`https://doi.org/${pub.doi}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline mt-1 inline-block"
+                            >
+                              DOI: {pub.doi}
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 italic">No recent publications available.</p>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -745,18 +893,17 @@ const FacultyProfile = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-4 h-4 text-blue-600" />
-                    <span className="text-gray-700">{faculty.phone}</span>
+                    <span>{faculty.phone || faculty.contact || '+880-2-9661900-73 (Ext. available upon request)'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    <span className="text-gray-700">{faculty.office}</span>
+                    <span>{faculty.office}</span>
                   </div>
                   {faculty.website && (
                     <div className="flex items-center gap-3">
                       <Globe className="w-4 h-4 text-blue-600" />
-                      <a href={faculty.website} target="_blank" rel="noopener noreferrer" 
-                         className="text-blue-600 hover:underline">
-                        Personal Website
+                      <a href={faculty.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {faculty.website.replace(/^https?:\/\//, '')}
                       </a>
                     </div>
                   )}

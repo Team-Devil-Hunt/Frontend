@@ -17,11 +17,11 @@ const FacultyFilters = ({
 }) => {
   const clearFilters = () => {
     setSearchTerm('')
-    setSelectedRole('')
-    setSelectedExpertise('')
+    setSelectedRole('all_roles')
+    setSelectedExpertise('all_expertise')
   }
 
-  const hasActiveFilters = searchTerm || selectedRole || selectedExpertise
+  const hasActiveFilters = searchTerm || (selectedRole && selectedRole !== 'all_roles') || (selectedExpertise && selectedExpertise !== 'all_expertise')
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -63,10 +63,10 @@ const FacultyFilters = ({
             onChange={(e) => setSelectedRole(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">All Roles</option>
-            {roles.map(role => (
+            <option value="all_roles">All Roles</option>
+            {roles && roles.length > 0 ? roles.map(role => (
               <option key={role} value={role}>{role}</option>
-            ))}
+            )) : null}
           </select>
         </div>
 
@@ -78,10 +78,10 @@ const FacultyFilters = ({
             onChange={(e) => setSelectedExpertise(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">All Expertise Areas</option>
-            {expertiseAreas.map(area => (
+            <option value="all_expertise">All Expertise Areas</option>
+            {expertiseAreas && expertiseAreas.length > 0 ? expertiseAreas.map(area => (
               <option key={area} value={area}>{area}</option>
-            ))}
+            )) : null}
           </select>
         </div>
       </div>

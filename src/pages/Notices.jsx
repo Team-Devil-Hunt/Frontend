@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import NoticeFilters from '../components/notices/NoticeFilters'
 import NoticeCard from '../components/notices/NoticeCard'
 import NoticeArchive from '../components/notices/NoticeArchive'
+import axios from 'axios'
+import { BaseUrl } from '../services/BaseUrl'
 
 /*
 API Schema:
@@ -173,6 +175,9 @@ const Notices = () => {
   })
 
   const [filteredNotices, setFilteredNotices] = useState([])
+  const [notices, setNotices] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   
   const categories = [
     { value: 'academic', label: 'Academic', activeClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -198,8 +203,47 @@ const Notices = () => {
   
   const activeFiltersCount = Object.values(filters).filter(value => value && value !== 'current').length
   
+  // Fetch announcements from the API
   useEffect(() => {
-    let result = [...mockNotices]
+    const fetchAnnouncements = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get(`${BaseUrl}/api/announcements`)
+        
+        // Transform backend data to match frontend expectations
+        const transformedData = response.data.map(announcement => ({
+          id: announcement.id.toString(),
+          title: announcement.title,
+          summary: announcement.content.substring(0, 150) + '...',
+          content: announcement.content,
+          category: announcement.type.toLowerCase(),
+          priority: announcement.priority.toLowerCase(),
+          publishedDate: announcement.date,
+          expiryDate: null, // Backend doesn't have this field yet
+          department: 'Department of Computer Science', // Default department
+          attachments: null, // Backend doesn't have this field yet
+          externalLink: null, // Backend doesn't have this field yet
+          isArchived: false // Assume all are current for now
+        }))
+        
+        setNotices(transformedData)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching announcements:', err)
+        setError('Failed to load announcements. Please try again later.')
+        // Use mock data as fallback if API fails
+        setNotices(mockNotices)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchAnnouncements()
+  }, [])
+  
+  // Filter announcements based on user selections
+  useEffect(() => {
+    let result = [...notices]
     
     if (filters.timeframe === 'current') {
       result = result.filter(notice => !notice.isArchived)
@@ -234,7 +278,7 @@ const Notices = () => {
     result.sort((a, b) => new Date(b.publishedDate) - new Date(a.publishedDate))
     
     setFilteredNotices(result)
-  }, [filters])
+  }, [filters, notices])
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -249,6 +293,18 @@ const Notices = () => {
           Stay updated with the latest announcements, notices, and important information from the Department of Computer Science and Engineering.
         </p>
       </motion.div>
+      
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
       
       <NoticeFilters 
         filters={filters}

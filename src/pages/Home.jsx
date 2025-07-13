@@ -55,8 +55,10 @@ import department3 from '../assets/department3.jpg'
 import department4 from '../assets/department4.jpg'
 import chairman1 from '../assets/chairman1.jpg'
 
-import { useEffect , useState } from 'react'
+import { useEffect, useState } from 'react'
 import Api from '../constant/Api'
+import axios from 'axios'
+import { baseURL } from '../constant/BaseUrl'
 
 // Mock API Data
 const mockOverviewData = {
@@ -219,12 +221,14 @@ const Home = () => {
     const fetchOverviewData = async () => {
       try {
         setLoading(prev => ({ ...prev, overview: true }));
-        const response = await Api.get('api/overview');
-        setOverviewData(response.data);
-        console.log('Overview data:', response.data);
+        const response = await axios.get(`${baseURL}/api/home`);
+        if (response.data) {
+          setOverviewData(response.data);
+          console.log('Overview data:', response.data);
+        }
       } catch (error) {
         console.error('Error fetching overview data:', error);
-        // Fallback to mock data if API fails
+        // Keep using the mock data that was set as initial state
       } finally {
         setLoading(prev => ({ ...prev, overview: false }));
       }
@@ -233,11 +237,15 @@ const Home = () => {
     const fetchAnnouncementsData = async () => {
       try {
         setLoading(prev => ({ ...prev, announcements: true }));
-        const response = await Api.get('api/announcements');
-        setAnnouncementsData(response.data);
-        console.log('Announcements data:', response.data);
+        const response = await axios.get(`${baseURL}/api/announcements`);
+        if (response.data && response.data.announcements) {
+          setAnnouncementsData(response.data.announcements);
+          console.log('Announcements data:', response.data);
+        }
       } catch (error) {
         console.error('Error fetching announcements data:', error);
+        // Set empty array as fallback
+        setAnnouncementsData([]);
       } finally {
         setLoading(prev => ({ ...prev, announcements: false }));
       }
@@ -246,9 +254,11 @@ const Home = () => {
     const fetchQuickLinksData = async () => {
       try {
         setLoading(prev => ({ ...prev, quickLinks: true }));
-        const response = await Api.get('api/quick-links');
-        setQuickLinksData(response.data);
-        console.log('Quick links data:', response.data);
+        const response = await axios.get(`${baseURL}/api/quick-links`);
+        if (response.data && response.data.links) {
+          setQuickLinksData(response.data);
+          console.log('Quick links data:', response.data);
+        }
       } catch (error) {
         console.error('Error fetching quick links data:', error);
         // Fallback to mock data if API fails
@@ -258,9 +268,14 @@ const Home = () => {
       }
     };
 
-    fetchOverviewData();
-    fetchAnnouncementsData();
-    fetchQuickLinksData();
+    // Fetch data with a slight delay to ensure components are mounted
+    const timer = setTimeout(() => {
+      fetchOverviewData();
+      fetchAnnouncementsData();
+      fetchQuickLinksData();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
   
 

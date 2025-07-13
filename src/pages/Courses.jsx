@@ -36,74 +36,32 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import Navbar from '../components/layout/Navbar'
+import Footer from '../components/layout/Footer'
 
-// Mock API service
+// Real API service
 const Api = {
   get: async (url) => {
-    // Simulate API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() > 0.1) { // 10% chance of failure for testing
-          resolve({ data: mockCoursesData })
-        } else {
-          reject(new Error('Failed to fetch courses data'))
-        }
-      }, 800)
-    })
-  }
-}
-
-// Mock data for courses
-const mockCoursesData = {
-  courses: [
-    {
-      id: "CSE101",
-      courseCode: "CSE101",
-      title: "Introduction to Computer Science",
-      description: "An introductory course covering the basics of computer science, programming concepts, and problem-solving techniques.",
-      credits: 3,
-      department: "Computer Science",
-      level: "Undergraduate",
-      semester: 1,
-      prerequisites: [],
-      instructors: ["Dr. Mahmuda Naznin"],
-      syllabus: "Introduction to programming, basic algorithms, data structures, and computer organization.",
-      tags: ["Programming", "Algorithms", "Beginner"]
-    },
-    {
-      id: "CSE203",
-      courseCode: "CSE203",
-      title: "Data Structures",
-      description: "Study of data organization, management, and storage formats that enable efficient access and modification.",
-      credits: 4,
-      department: "Computer Science",
-      level: "Undergraduate",
-      semester: 2,
-      prerequisites: ["CSE101"],
-      instructors: ["Dr. Sadia Sharmin"],
-      syllabus: "Arrays, linked lists, stacks, queues, trees, graphs, sorting and searching algorithms.",
-      tags: ["Programming", "Algorithms", "Data Structures"]
-    },
-    {
-      id: "CSE307",
-      courseCode: "CSE307",
-      title: "Software Engineering",
-      description: "Principles and practices of software development and project management.",
-      credits: 3,
-      department: "Software Engineering",
-      level: "Undergraduate",
-      semester: 5,
-      prerequisites: ["CSE203"],
-      instructors: ["Dr. Kazi Muheymin-Us-Sakib"],
-      syllabus: "Software development lifecycle, requirements engineering, design patterns, testing, maintenance.",
-      tags: ["Software Development", "Project Management"]
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        // Include credentials if your API requires authentication
+        // credentials: 'include',
+      })
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+      const data = await response.json()
+      return { data }
+    } catch (error) {
+      console.error('API fetch error:', error)
+      throw error
     }
-  ],
-  departments: ["Computer Science", "Software Engineering"],
-  levels: ["Undergraduate", "Graduate"],
-  semesters: [1, 2, 3, 4, 5, 6, 7, 8]
+  }
 }
 
 const Courses = () => {
@@ -120,9 +78,9 @@ const Courses = () => {
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({
     search: '',
-    department: '',
-    level: '',
-    semester: '',
+    department: 'all_departments',
+    level: 'all_levels',
+    semester: 'all_semesters',
     tag: ''
   })
   const [viewMode, setViewMode] = useState('grid')
@@ -134,9 +92,39 @@ const Courses = () => {
     setError(null)
     
     try {
-      // In production, this would be: const response = await fetch('/api/courses')
+      // Use the proxy configured in vite.config.js
       const response = await Api.get('/api/courses')
-      setCoursesData(response.data)
+      
+      // Transform the data to match the expected structure
+      const transformedData = {
+        courses: response.data.courses.map(course => ({
+          id: course.id,
+          courseCode: course.code,
+          title: course.title,
+          description: course.description,
+          credits: course.credits,
+          department: course.specialization || 'Computer Science',
+          level: course.year <= 4 ? 'Undergraduate' : 'Graduate',
+          semester: course.semester,
+          prerequisites: Array.isArray(course.prerequisites) ? 
+            course.prerequisites.map(p => {
+              try {
+                return JSON.parse(p)[0];
+              } catch (e) {
+                return p;
+              }
+            }) : [],
+          instructors: [],
+          syllabus: '',
+          tags: [course.specialization || 'Core', course.difficulty || '']
+            .filter(tag => tag !== '')
+        })),
+        departments: [...new Set(response.data.courses.map(c => c.specialization || 'Computer Science'))],
+        levels: ['Undergraduate', 'Graduate'],
+        semesters: [...new Set(response.data.courses.map(c => c.semester))].sort((a, b) => a - b)
+      }
+      
+      setCoursesData(transformedData)
     } catch (err) {
       console.error('Error fetching courses data:', err)
       setError(err.message || 'Failed to fetch courses data')
@@ -160,17 +148,17 @@ const Courses = () => {
     }
     
     // Department filter
-    if (filters.department && course.department !== filters.department) {
+    if (filters.department !== 'all_departments' && filters.department && course.department !== filters.department) {
       return false
     }
     
     // Level filter
-    if (filters.level && course.level !== filters.level) {
+    if (filters.level !== 'all_levels' && filters.level && course.level !== filters.level) {
       return false
     }
     
     // Semester filter
-    if (filters.semester && course.semester !== parseInt(filters.semester)) {
+    if (filters.semester !== 'all_semesters' && filters.semester && course.semester !== parseInt(filters.semester)) {
       return false
     }
     
@@ -184,6 +172,7 @@ const Courses = () => {
   
   // Handle filter changes
   const handleFilterChange = (name, value) => {
+    // Keep the special values as is, they'll be handled in the filtering logic
     setFilters(prev => ({ ...prev, [name]: value }))
   }
   
@@ -191,19 +180,24 @@ const Courses = () => {
   const clearFilters = () => {
     setFilters({
       search: '',
-      department: '',
-      level: '',
-      semester: '',
+      department: 'all_departments',
+      level: 'all_levels',
+      semester: 'all_semesters',
       tag: ''
     })
   }
   
-  // Count active filters
-  const activeFiltersCount = Object.values(filters).filter(Boolean).length
+  // Count active filters - exclude special placeholder values
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (!value) return false;
+    if (key === 'department' && value === 'all_departments') return false;
+    if (key === 'level' && value === 'all_levels') return false;
+    if (key === 'semester' && value === 'all_semesters') return false;
+    return true;
+  }).length
 
   return (
     <>
-      <Navbar />
       <div className="container mx-auto py-8 px-4">
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -292,7 +286,7 @@ const Courses = () => {
                     <SelectValue placeholder="Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all_departments">All Departments</SelectItem>
                     {coursesData.departments?.map((dept) => (
                       <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
@@ -308,7 +302,7 @@ const Courses = () => {
                     <SelectValue placeholder="Level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Levels</SelectItem>
+                    <SelectItem value="all_levels">All Levels</SelectItem>
                     {coursesData.levels?.map((level) => (
                       <SelectItem key={level} value={level}>{level}</SelectItem>
                     ))}
@@ -324,7 +318,7 @@ const Courses = () => {
                     <SelectValue placeholder="Semester" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Semesters</SelectItem>
+                    <SelectItem value="all_semesters">All Semesters</SelectItem>
                     {coursesData.semesters?.map((semester) => (
                       <SelectItem key={semester} value={semester.toString()}>
                         Semester {semester}
@@ -348,17 +342,17 @@ const Courses = () => {
                         Search: {filters.search}
                       </Badge>
                     )}
-                    {filters.department && (
+                    {filters.department && filters.department !== 'all_departments' && (
                       <Badge variant="secondary" className="flex items-center gap-1">
                         Department: {filters.department}
                       </Badge>
                     )}
-                    {filters.level && (
+                    {filters.level && filters.level !== 'all_levels' && (
                       <Badge variant="secondary" className="flex items-center gap-1">
                         Level: {filters.level}
                       </Badge>
                     )}
-                    {filters.semester && (
+                    {filters.semester && filters.semester !== 'all_semesters' && (
                       <Badge variant="secondary" className="flex items-center gap-1">
                         Semester: {filters.semester}
                       </Badge>
@@ -397,12 +391,12 @@ const Courses = () => {
             {/* Course display with view mode toggle */}
             {filteredCourses.length > 0 && (
               <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold">
-                    {filteredCourses.length} {filteredCourses.length === 1 ? 'Course' : 'Courses'} Found
-                  </h2>
-                  
-                  <Tabs defaultValue={viewMode} onValueChange={setViewMode} className="w-auto">
+                <Tabs defaultValue={viewMode} onValueChange={setViewMode} className="w-full">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold">
+                      {filteredCourses.length} {filteredCourses.length === 1 ? 'Course' : 'Courses'} Found
+                    </h2>
+                    
                     <TabsList className="grid w-[180px] grid-cols-2">
                       <TabsTrigger value="grid" className="flex items-center gap-2">
                         <Grid size={16} />
@@ -413,11 +407,10 @@ const Courses = () => {
                         List
                       </TabsTrigger>
                     </TabsList>
-                  </Tabs>
-                </div>
-                
-                {/* Grid View */}
-                <TabsContent value="grid" className="mt-0">
+                  </div>
+                  
+                  {/* Grid View */}
+                  <TabsContent value="grid" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredCourses.map((course) => (
                       <motion.div
@@ -578,6 +571,7 @@ const Courses = () => {
                     ))}
                   </div>
                 </TabsContent>
+                </Tabs>
               </div>
             )}
           </div>

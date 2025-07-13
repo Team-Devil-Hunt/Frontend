@@ -36,7 +36,18 @@ import { Users, Award, BookOpen, Search } from 'lucide-react'
 import FacultyCard from '../components/faculty/FacultyCard'
 import FacultyFilters from '../components/faculty/FacultyFilters'
 import { Badge } from '../components/ui/badge'
-import Api from '../constant/Api'
+import axios from 'axios'
+import { BaseUrl } from '../services/BaseUrl'
+
+// Import teacher images
+import palashRoyImg from '../assets/teacher/Palash_Roy.jpg'
+import ashrafulAlamImg from '../assets/teacher/ashraful_alam.jpeg'
+import farhanAhmedImg from '../assets/teacher/farhan_ahmed.jpg'
+import hasanBabuImg from '../assets/teacher/hasan_babu.jpg'
+import ismatRahmanImg from '../assets/teacher/ismat_rahman.jpeg'
+import mosaddekHossainImg from '../assets/teacher/mosaddek_hossain_kamal.jpeg'
+import shabbirAhmedImg from '../assets/teacher/shabbir_ahmed.jpg'
+import suraiyaParvinImg from '../assets/teacher/suraiya_parvin.jpg'
 
 // Mock API Data
 const mockFacultyData = {
@@ -48,6 +59,7 @@ const mockFacultyData = {
       department: 'Computer Science and Engineering',
       role: 'Professor',
       expertise: ['Machine Learning', 'Artificial Intelligence', 'Data Mining', 'Computer Vision'],
+      image: palashRoyImg,
       email: 'palash.roy@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7456',
       office: 'Room 301, CSE Building',
@@ -70,10 +82,10 @@ const mockFacultyData = {
       department: 'Computer Science and Engineering',
       role: 'Associate Professor',
       expertise: ['Software Engineering', 'Database Systems', 'Web Technologies', 'Mobile Computing'],
+      image: ashrafulAlamImg,
       email: 'ashraful.alam@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7457',
       office: 'Room 205, CSE Building',
-      image: '/src/assets/teacher/ashraful_alam.jpeg',
       publications: 42,
       experience: 12,
       rating: 4.6,
@@ -90,11 +102,11 @@ const mockFacultyData = {
       designation: 'Assistant Professor',
       department: 'Computer Science and Engineering',
       role: 'Assistant Professor',
-      expertise: ['Network Security', 'Cryptography', 'Blockchain', 'Cybersecurity'],
+      expertise: ['Networking', 'Cybersecurity', 'IoT'],
+      image: farhanAhmedImg,
       email: 'farhan.ahmed@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7458',
       office: 'Room 108, CSE Building',
-      image: '/src/assets/teacher/farhan_ahmed.jpg',
       publications: 28,
       experience: 8,
       rating: 4.5,
@@ -115,7 +127,7 @@ const mockFacultyData = {
       email: 'hasan.babu@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7459',
       office: 'Room 301, CSE Building',
-      image: '/src/assets/teacher/hasan_babu.jpg',
+      image: hasanBabuImg,
       publications: 95,
       experience: 20,
       rating: 4.9,
@@ -136,7 +148,7 @@ const mockFacultyData = {
       email: 'ismat.rahman@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7460',
       office: 'Room 302, CSE Building',
-      image: '/src/assets/teacher/ismat_rahman.jpeg',
+      image: ismatRahmanImg,
       publications: 67,
       experience: 14,
       rating: 4.7,
@@ -157,7 +169,7 @@ const mockFacultyData = {
       email: 'mosaddek.kamal@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7461',
       office: 'Room 206, CSE Building',
-      image: '/src/assets/teacher/mosaddek_hossain_kamal.jpeg',
+      image: mosaddekHossainImg,
       publications: 78,
       experience: 18,
       rating: 4.8,
@@ -178,7 +190,7 @@ const mockFacultyData = {
       email: 'shabbir.ahmed@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7462',
       office: 'Room 108, CSE Building',
-      image: '/src/assets/teacher/shabbir_ahmed.jpg',
+      image: shabbirAhmedImg,
       publications: 35,
       experience: 9,
       rating: 4.6,
@@ -199,7 +211,7 @@ const mockFacultyData = {
       email: 'suraiya.parvin@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7463',
       office: 'Room 207, CSE Building',
-      image: '/src/assets/teacher/suraiya_parvin.jpg',
+      image: suraiyaParvinImg,
       publications: 38,
       experience: 11,
       rating: 4.7,
@@ -224,9 +236,9 @@ const mockFacultyData = {
 
 const Faculty = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedRole, setSelectedRole] = useState('')
-  const [selectedExpertise, setSelectedExpertise] = useState('')
-  const [facultyData, setFacultyData] = useState({ faculty: [], roles: [], expertise_areas: [] })
+  const [selectedRole, setSelectedRole] = useState('all_roles')
+  const [selectedExpertise, setSelectedExpertise] = useState('all_expertise')
+  const [facultyData, setFacultyData] = useState({ faculty: [], roles: [], expertiseAreas: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -234,13 +246,100 @@ const Faculty = () => {
     const fetchFacultyData = async () => {
       try {
         setLoading(true)
-        const response = await Api.get('api/faculty')
-        setFacultyData(response.data)
-        console.log('Faculty data:', response.data)
+        setError(null)
+        console.log('Fetching faculty data from API...')
+        // Fetch from API using the BaseUrl
+        const response = await axios.get(`${BaseUrl}/api/faculty`)
+        
+        if (response.data) {
+          // Transform API data to match frontend structure
+          const faculty = response.data.faculty || [];
+          
+          // Process faculty data to ensure all fields are properly formatted
+          const processedFaculty = faculty.map(f => {
+            // Create a slug from the name for routing
+            const slug = f.slug || (f.name ? f.name.toLowerCase().replace(/\s+/g, '-') : `faculty-${Math.random().toString(36).substr(2, 9)}`);
+            
+            // Handle expertise parsing safely
+            let expertiseArray = [];
+            try {
+              if (Array.isArray(f.expertise)) {
+                expertiseArray = f.expertise;
+              } else if (typeof f.expertise === 'string') {
+                if (f.expertise.startsWith('[') && f.expertise.endsWith(']')) {
+                  expertiseArray = JSON.parse(f.expertise);
+                } else {
+                  expertiseArray = [f.expertise];
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing expertise:', e);
+              expertiseArray = Array.isArray(f.expertise) ? f.expertise : 
+                             (f.expertise ? [f.expertise.toString()] : []);
+            }
+            
+            // Map the actual API response fields to what our components expect
+            return {
+              ...f,
+              // Use proper field names and provide defaults
+              designation: f.designation || 'Faculty',
+              role: f.role || f.designation || 'Faculty',
+              expertise: expertiseArray,
+              shortBio: f.shortBio || '',
+              phone: f.contact || '',
+              researchInterests: f.researchInterests || [],
+              isChairman: f.isChairman || false,
+              publications: Number(f.publications) || 0,
+              experience: Number(f.experience) || 0,
+              // Ensure we have a valid ID for database reference
+              id: f.id ? f.id.toString() : `faculty-${Math.random().toString(36).substr(2, 9)}`,
+              // Add the slug for routing
+              slug: slug,
+              // Add image path if not present
+              image: f.image || `/src/assets/teacher/${f.name.split(' ').pop().toLowerCase()}.jpg`
+            };
+          });
+          
+          // Calculate statistics for the stats cards
+          const totalFaculty = processedFaculty.length;
+          const professorCount = processedFaculty.filter(f => 
+            f.designation?.toLowerCase().includes('professor') || 
+            f.role?.toLowerCase().includes('professor')
+          ).length;
+          const totalPublications = processedFaculty.reduce((sum, f) => sum + (Number(f.publications) || 0), 0);
+          const avgExperience = Math.round(
+            processedFaculty.reduce((sum, f) => sum + (Number(f.experience) || 0), 0) / 
+            (processedFaculty.length || 1)
+          );
+          
+          // Add index numbers to faculty for consistent numbering in the list
+          processedFaculty.forEach((f, index) => {
+            f.displayIndex = index + 1;
+          });
+          
+          setFacultyData({
+            faculty: processedFaculty,
+            roles: response.data.roles || [],
+            expertiseAreas: response.data.expertise_areas || [],
+            stats: {
+              totalFaculty,
+              professorCount,
+              totalPublications,
+              avgExperience
+            }
+          })
+          console.log('Faculty data from API:', processedFaculty)
+        }
+        
         setLoading(false)
       } catch (error) {
         console.error('Error fetching faculty data:', error)
-        setError('Failed to load faculty data. Please try again later.')
+        const errorMessage = error.response ? 
+          `API Error: ${error.response.status} ${error.response.statusText}` : 
+          `Network Error: ${error.message}`
+        
+        console.log('Error details:', errorMessage)
+        setError(`Failed to load faculty data: ${errorMessage}. Using local data instead.`)
         setLoading(false)
         // Fallback to mock data if API fails
         setFacultyData(mockFacultyData)
@@ -253,17 +352,25 @@ const Faculty = () => {
   // Filter faculty based on search and filters
   const filteredFaculty = useMemo(() => {
     return facultyData.faculty.filter(faculty => {
+      // Handle search term matching
       const matchesSearch = !searchTerm || 
-        faculty.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        faculty.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        faculty.expertise.some(exp => exp.toLowerCase().includes(searchTerm.toLowerCase()))
+        (faculty.name && faculty.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (faculty.designation && faculty.designation.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (faculty.expertise && Array.isArray(faculty.expertise) && 
+          faculty.expertise.some(exp => exp && exp.toLowerCase().includes(searchTerm.toLowerCase())))
       
-      const matchesRole = !selectedRole || faculty.role === selectedRole
-      const matchesExpertise = !selectedExpertise || faculty.expertise.includes(selectedExpertise)
+      // Handle role matching - designation is used as role in the API
+      const matchesRole = !selectedRole || selectedRole === 'all_roles' || faculty.designation === selectedRole
+      
+      // Handle expertise matching with null checks
+      const matchesExpertise = !selectedExpertise || 
+        selectedExpertise === 'all_expertise' || 
+        (faculty.expertise && Array.isArray(faculty.expertise) && 
+          faculty.expertise.includes(selectedExpertise))
       
       return matchesSearch && matchesRole && matchesExpertise
     })
-  }, [searchTerm, selectedRole, selectedExpertise])
+  }, [facultyData.faculty, searchTerm, selectedRole, selectedExpertise])
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -311,24 +418,28 @@ const Faculty = () => {
           className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
         >
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
-            <span className="font-bold text-lg">{facultyData.faculty.length}</span> Faculty Members
+            <span className="font-bold text-lg">{facultyData.stats?.totalFaculty || facultyData.faculty.length}</span> Faculty Members
             <div className="text-gray-600">Total Faculty</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">
-              {facultyData.faculty.filter(f => f.role === 'Professor').length}
+              {facultyData.stats?.professorCount || facultyData.faculty.filter(f => 
+                f.designation?.toLowerCase().includes('professor') || 
+                f.role?.toLowerCase().includes('professor')
+              ).length}
             </div>
             <div className="text-gray-600">Professors</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">
-              {facultyData.faculty.reduce((sum, f) => sum + f.publications, 0)}
+              {facultyData.stats?.totalPublications || facultyData.faculty.reduce((sum, f) => sum + (Number(f.publications) || 0), 0)}
             </div>
             <div className="text-gray-600">Publications</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">
-              {Math.round(facultyData.faculty.reduce((sum, f) => sum + f.experience, 0) / facultyData.faculty.length)}
+              {facultyData.stats?.avgExperience || (facultyData.faculty.length > 0 ? 
+                Math.round(facultyData.faculty.reduce((sum, f) => sum + (Number(f.experience) || 0), 0) / facultyData.faculty.length) : 0)}
             </div>
             <div className="text-gray-600">Avg. Experience</div>
           </div>
@@ -348,7 +459,7 @@ const Faculty = () => {
             selectedExpertise={selectedExpertise}
             setSelectedExpertise={setSelectedExpertise}
             roles={facultyData.roles}
-            expertiseAreas={facultyData.expertise_areas}
+            expertiseAreas={facultyData.expertiseAreas}
             totalResults={facultyData.faculty.length}
             filteredResults={filteredFaculty.length}
           />

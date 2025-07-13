@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '../ui/button'
 
-const HeroSection = ({ data, variants, loading = false }) => {
+const HeroSection = ({ data = {}, variants = { container: {}, item: {} }, loading = false }) => {
   return (
     <motion.section 
       className="relative py-20 px-4 sm:px-6 lg:px-8"
@@ -15,29 +15,35 @@ const HeroSection = ({ data, variants, loading = false }) => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div variants={variants.item}>
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              {data.title.split('&')[0]}
-              <span className="text-blue-600 block">& {data.title.split('&')[1]}</span>
+              {data?.title?.includes('&') ? (
+                <>
+                  {data.title.split('&')[0]}
+                  <span className="text-blue-600 block">& {data.title.split('&')[1]}</span>
+                </>
+              ) : (
+                data?.title || 'Department of Computer Science & Engineering'
+              )}
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              {data.description}
+              {data?.description || 'University of Dhaka'}
             </p>
             
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{data.stats.students}+</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">{data?.stats?.students || '1000'}+</div>
                 <div className="text-sm text-gray-600">Students</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{data.stats.faculty}+</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">{data?.stats?.faculty || '50'}+</div>
                 <div className="text-sm text-gray-600">Faculty</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{data.stats.programs}</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">{data?.stats?.programs || '5'}</div>
                 <div className="text-sm text-gray-600">Programs</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{data.stats.research}+</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">{data?.stats?.research || '100'}+</div>
                 <div className="text-sm text-gray-600">Research Projects</div>
               </div>
             </div>

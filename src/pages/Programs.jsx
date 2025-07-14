@@ -69,6 +69,7 @@ const Programs = () => {
   const [coursesData, setCoursesData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedProgram, setSelectedProgram] = useState(null)
 
   useEffect(() => {
     const fetchProgramsData = async () => {
@@ -218,7 +219,7 @@ const Programs = () => {
                 >
                   <ProgramCard
                     program={program}
-                    onViewDetails={() => console.log('View details')}
+                    onViewDetails={(program) => setSelectedProgram(program)}
                   />
                 </motion.div>
               ))}

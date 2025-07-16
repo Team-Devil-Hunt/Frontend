@@ -535,44 +535,70 @@ const EquipmentBooking = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-lg shadow-md overflow-hidden"
+              className="bg-white rounded-xl shadow-md overflow-hidden border border-blue-50 hover:shadow-lg transition-all duration-300 hover:border-blue-100 group relative"
             >
-              <div className="h-48 bg-gray-200 relative">
-                <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-sm font-medium">
-                  {equipment.available} / {equipment.quantity} Available
+              {/* Blue accent border */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-500 to-blue-700"></div>
+              
+              <div className="h-48 bg-gradient-to-br from-blue-50 to-blue-100 relative">
+                <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-4 py-1.5 text-sm font-medium rounded-bl-lg shadow-sm">
+                  <span className="font-bold">{equipment.available}</span> / {equipment.quantity} Available
                 </div>
-                {/* Placeholder for equipment image */}
-                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                  {getCategoryIcon(equipment.categoryId)}
-                  <span className="ml-2 text-gray-500 text-lg">{equipment.name}</span>
+                
+                {/* Equipment image/icon */}
+                <div className="w-full h-full flex items-center justify-center bg-blue-50/50">
+                  <div className="p-4 bg-white/80 rounded-full shadow-inner border border-blue-100">
+                    {React.cloneElement(getCategoryIcon(equipment.categoryId), { 
+                      className: 'w-12 h-12 text-blue-600' 
+                    })}
+                  </div>
                 </div>
               </div>
               
-              <div className="p-6">
-                <div className="flex items-center mb-2">
-                  {getCategoryIcon(equipment.categoryId)}
-                  <span className="ml-2 text-sm text-indigo-600 font-medium">
+              <div className="p-6 bg-gradient-to-b from-white to-blue-50">
+                <div className="flex items-center mb-3">
+                  <div className="p-1.5 bg-blue-100 rounded-lg">
+                    {React.cloneElement(getCategoryIcon(equipment.categoryId), {
+                      className: 'w-4 h-4 text-blue-600'
+                    })}
+                  </div>
+                  <span className="ml-2 text-sm font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">
                     {getCategoryName(equipment.categoryId)}
                   </span>
                 </div>
                 
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{equipment.name}</h3>
-                <p className="text-gray-600 mb-4">{equipment.description}</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">
+                  {equipment.name}
+                </h3>
+                <p className="text-gray-600 mb-4 leading-relaxed line-clamp-2">
+                  {equipment.description}
+                </p>
                 
-                <div className="text-sm text-gray-500 mb-4">
-                  <p><strong>Specifications:</strong> {equipment.specifications}</p>
-                  <p><strong>Location:</strong> {equipment.location}</p>
+                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <div className="flex items-start">
+                    <svg className="w-4 h-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span className="font-medium">Specs:</span> <span className="text-gray-700">{equipment.specifications}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-4 h-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="font-medium">Location:</span> <span className="text-gray-700">{equipment.location}</span>
+                  </div>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   {equipment.requiresApproval ? (
-                    <div className="flex items-center text-amber-600 text-sm">
-                      <AlertTriangle size={16} className="mr-1" />
+                    <div className="flex items-center text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-xs font-medium">
+                      <AlertTriangle size={14} className="mr-1.5" />
                       <span>Requires Approval</span>
                     </div>
                   ) : (
-                    <div className="flex items-center text-green-600 text-sm">
-                      <CheckCircle size={16} className="mr-1" />
+                    <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-medium">
+                      <CheckCircle size={14} className="mr-1.5" />
                       <span>Instant Booking</span>
                     </div>
                   )}

@@ -63,7 +63,7 @@ const EventCard = ({ event, index, onRegister }) => {
       case 'academic':
         return 'bg-gradient-to-r from-cyan-500 to-cyan-600'
       default:
-        return 'bg-gradient-to-r from-gray-500 to-gray-600'
+        return 'bg-gradient-to-r from-blue-500 to-blue-500'
     }
   }
 

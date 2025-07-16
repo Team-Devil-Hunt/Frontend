@@ -8,22 +8,28 @@ const CourseCard = ({ course }) => {
   // Define color schemes based on course difficulty
   const colorScheme = {
     Beginner: {
-      headerBg: 'bg-gradient-to-r from-green-600 to-green-500',
-      iconColor: 'text-green-600',
-      badgeColor: 'bg-green-100 text-green-800 hover:bg-green-200',
-      badgeVariant: 'default'
+      headerBg: 'bg-green-500',
+      iconColor: 'text-green-400',
+      badgeColor: 'bg-green-50/90 text-green-700 hover:bg-green-100',
+      badgeVariant: 'default',
+      borderColor: 'border-t-green-400',
+      hoverShadow: 'hover:shadow-green-100'
     },
     Intermediate: {
-      headerBg: 'bg-gradient-to-r from-orange-500 to-amber-500',
-      iconColor: 'text-orange-600',
-      badgeColor: 'bg-orange-100 text-orange-800 hover:bg-orange-200',
-      badgeVariant: 'secondary'
+      headerBg: 'bg-amber-500',
+      iconColor: 'text-amber-400',
+      badgeColor: 'bg-amber-50/90 text-amber-700 hover:bg-amber-100',
+      badgeVariant: 'secondary',
+      borderColor: 'border-t-amber-400',
+      hoverShadow: 'hover:shadow-amber-100'
     },
     Advanced: {
-      headerBg: 'bg-gradient-to-r from-red-600 to-rose-500',
-      iconColor: 'text-red-600',
-      badgeColor: 'bg-red-100 text-red-800 hover:bg-red-200',
-      badgeVariant: 'destructive'
+      headerBg: 'bg-red-500',
+      iconColor: 'text-red-400',
+      badgeColor: 'bg-red-50/90 text-red-700 hover:bg-red-100',
+      badgeVariant: 'destructive',
+      borderColor: 'border-t-red-400',
+      hoverShadow: 'hover:shadow-red-100'
     }
   }
   
@@ -38,7 +44,7 @@ const CourseCard = ({ course }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden border-l-4" style={{ borderLeftColor: course.difficulty === 'Beginner' ? '#16a34a' : course.difficulty === 'Intermediate' ? '#f97316' : '#dc2626' }}>
+      <Card className={`h-full transition-all duration-300 overflow-hidden border-t-4 ${colors.borderColor} ${colors.hoverShadow} hover:shadow-md`}>
         <div className={`${colors.headerBg} text-white p-4`}>
           <div className="flex justify-between items-start mb-2">
             <Badge variant="outline" className="bg-white/20 text-white border-white/30">
@@ -59,15 +65,15 @@ const CourseCard = ({ course }) => {
           </p>
           
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
+            <div className="flex flex-col items-center p-2 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
               <BookOpen className={`w-4 h-4 mb-1 ${colors.iconColor}`} />
-              <span className="text-sm font-medium">{course.credits}</span>
-              <span className="text-xs text-gray-500">Credits</span>
+              <span className="text-sm font-medium text-gray-800">{course.credits}</span>
+              <span className="text-xs text-gray-500 mt-0.5">Credits</span>
             </div>
-            <div className="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
+            <div className="flex flex-col items-center p-2 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
               <Users className={`w-4 h-4 mb-1 ${colors.iconColor}`} />
-              <span className="text-sm font-medium">{course.enrolledStudents}</span>
-              <span className="text-xs text-gray-500">Students</span>
+              <span className="text-sm font-medium text-gray-800">{course.enrolledStudents}</span>
+              <span className="text-xs text-gray-500 mt-0.5">Students</span>
             </div>
           </div>
           
@@ -83,7 +89,7 @@ const CourseCard = ({ course }) => {
           
           <div>
             <span className="text-xs font-medium text-gray-700 block mb-1">Specialization:</span>
-            <Badge className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800">
+            <Badge className="text-xs bg-gray-100/80 hover:bg-gray-200/80 text-gray-700 border border-gray-200">
               {course.specialization}
             </Badge>
           </div>
@@ -93,7 +99,7 @@ const CourseCard = ({ course }) => {
               <span className="text-xs font-medium text-gray-700 block mb-1">Prerequisites:</span>
               <div className="flex flex-wrap gap-1">
                 {course.prerequisites.map((prereq, index) => (
-                  <Badge key={index} variant="outline" className="text-xs hover:bg-gray-100">
+                  <Badge key={index} variant="outline" className="text-xs bg-white/80 hover:bg-gray-100/80 border-gray-200">
                     {prereq}
                   </Badge>
                 ))}

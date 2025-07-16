@@ -9,25 +9,37 @@ const ProgramCard = ({ program, onViewDetails }) => {
   // Define color schemes based on program level
   const colorScheme = {
     Undergraduate: {
-      headerBg: 'bg-gradient-to-r from-blue-600 to-blue-500',
-      iconColor: 'text-blue-600',
+      headerBg: 'bg-blue-500',
+      iconColor: 'text-blue-400',
       badgeVariant: 'default',
       buttonVariant: 'default',
-      buttonClass: 'bg-blue-600 hover:bg-blue-700'
+      buttonClass: 'bg-blue-500 hover:bg-blue-600',
+      borderColor: 'border-t-blue-400',
+      badgeBg: 'bg-blue-50/90 text-blue-700',
+      durationBadge: 'bg-blue-50/70 text-blue-700 border-blue-100',
+      hoverShadow: 'hover:shadow-blue-100'
     },
     Graduate: {
-      headerBg: 'bg-gradient-to-r from-purple-600 to-purple-500',
-      iconColor: 'text-purple-600',
+      headerBg: 'bg-purple-500',
+      iconColor: 'text-purple-400',
       badgeVariant: 'secondary',
       buttonVariant: 'secondary',
-      buttonClass: 'bg-purple-600 hover:bg-purple-700'
+      buttonClass: 'bg-purple-500 hover:bg-purple-600',
+      borderColor: 'border-t-purple-400',
+      badgeBg: 'bg-purple-50/90 text-purple-700',
+      durationBadge: 'bg-purple-50/70 text-purple-700 border-purple-100',
+      hoverShadow: 'hover:shadow-purple-100'
     },
     Postgraduate: {
-      headerBg: 'bg-gradient-to-r from-emerald-600 to-emerald-500',
-      iconColor: 'text-emerald-600',
+      headerBg: 'bg-emerald-500',
+      iconColor: 'text-emerald-400',
       badgeVariant: 'outline',
       buttonVariant: 'outline',
-      buttonClass: 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
+      buttonClass: 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500',
+      borderColor: 'border-t-emerald-400',
+      badgeBg: 'bg-emerald-50/90 text-emerald-700',
+      durationBadge: 'bg-emerald-50/70 text-emerald-700 border-emerald-100',
+      hoverShadow: 'hover:shadow-emerald-100'
     }
   }
   
@@ -39,13 +51,13 @@ const ProgramCard = ({ program, onViewDetails }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden border-t-4 border-t-primary">
+      <Card className={`h-full transition-all duration-300 overflow-hidden border-t-4 ${colors.borderColor} ${colors.hoverShadow} hover:shadow-md`}>
         <div className={`${colors.headerBg} text-white p-6`}>
           <div className="flex justify-between items-start mb-3">
-            <Badge variant={colors.badgeVariant} className="bg-white/20 text-white border-none">
+            <Badge className={`${colors.badgeBg} border-none font-medium`}>
               {program.level}
             </Badge>
-            <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+            <Badge className={`${colors.durationBadge} border font-medium`}>
               {program.duration}
             </Badge>
           </div>
@@ -55,26 +67,26 @@ const ProgramCard = ({ program, onViewDetails }) => {
         
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                <Clock className={`w-5 h-5 mb-1 ${colors.iconColor}`} />
-                <span className="text-sm font-medium">{program.duration}</span>
-                <span className="text-xs text-gray-500">Duration</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col items-center p-3 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
+                <Clock className={`w-5 h-5 mb-1.5 ${colors.iconColor}`} />
+                <span className="text-sm font-medium text-gray-800">{program.duration}</span>
+                <span className="text-xs text-gray-500 mt-0.5">Duration</span>
               </div>
-              <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                <Users className={`w-5 h-5 mb-1 ${colors.iconColor}`} />
-                <span className="text-sm font-medium">{program.totalStudents}</span>
-                <span className="text-xs text-gray-500">Students</span>
+              <div className="flex flex-col items-center p-3 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
+                <Users className={`w-5 h-5 mb-1.5 ${colors.iconColor}`} />
+                <span className="text-sm font-medium text-gray-800">{program.totalStudents}</span>
+                <span className="text-xs text-gray-500 mt-0.5">Students</span>
               </div>
-              <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                <BookOpen className={`w-5 h-5 mb-1 ${colors.iconColor}`} />
-                <span className="text-sm font-medium">{program.totalCourses}</span>
-                <span className="text-xs text-gray-500">Courses</span>
+              <div className="flex flex-col items-center p-3 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
+                <BookOpen className={`w-5 h-5 mb-1.5 ${colors.iconColor}`} />
+                <span className="text-sm font-medium text-gray-800">{program.totalCourses}</span>
+                <span className="text-xs text-gray-500 mt-0.5">Courses</span>
               </div>
-              <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                <Award className={`w-5 h-5 mb-1 ${colors.iconColor}`} />
-                <span className="text-sm font-medium">{program.totalCredits}</span>
-                <span className="text-xs text-gray-500">Credits</span>
+              <div className="flex flex-col items-center p-3 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
+                <Award className={`w-5 h-5 mb-1.5 ${colors.iconColor}`} />
+                <span className="text-sm font-medium text-gray-800">{program.totalCredits}</span>
+                <span className="text-xs text-gray-500 mt-0.5">Credits</span>
               </div>
             </div>
             

@@ -56,29 +56,46 @@ const Login = () => {
     setError('');
   
     try {
-      const response = await Api.post('/api/auth/login', formData);
-      console.log(response.data);
-      console.log(response.data.message);
+      // The backend uses session cookies for authentication, not tokens
+      const response = await Api.post('/api/auth/login', formData, {
+        withCredentials: true // Important: This ensures cookies are sent/received
+      });
+      
+      console.log('Login response:', response.data);
+      
       if (response.data.message === "Login successful") {
         toast.success("Login successful!");
-        console.log("Hello");
-  
-        // Assuming response.data includes token or user info
-        setGlobalState(prev => ({ ...prev, user: response.data }));
-  
-        // Redirect based on role
-        // if (formData.role === 'student') {
-        //   navigate('/student/dashboard');
-        // } else if (formData.role === 'faculty') {
-        //   navigate('/faculty/dashboard');
-        // }
-        navigate('faculty');
+        
+        // Store the complete user object with role information
+        const userData = {
+          id: response.data.id,
+          name: response.data.name,
+          email: response.data.email,
+          role: response.data.role, // Store the complete role object from the backend
+          username: response.data.username,
+          contact: response.data.contact,
+          isAuthenticated: true
+        };
+        
+        console.log('Storing user data with permissions:', userData);
+        
+        // Update global state with proper user data structure
+        setGlobalState(prev => ({ ...prev, user: userData }));
+        
+        // Redirect based on role name
+        if (response.data.role.name === 'student') {
+          navigate('/student/dashboard');
+        } else if (response.data.role.name === 'faculty') {
+          navigate('/faculty/dashboard');
+        } else {
+          navigate('/');
+        }
       }
   
       setIsLoading(false);
     } catch (err) {
-      console.error(err);
-      setError('Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
       setIsLoading(false);
     }
   };
@@ -136,7 +153,7 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
+                  placeholder="Email address (e.g., student1@csedu.edu)"
                 />
               </div>
             </div>

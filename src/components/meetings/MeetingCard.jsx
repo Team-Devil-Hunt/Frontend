@@ -99,7 +99,7 @@ const MeetingCard = ({ meeting, onRSVP, onArchiveToggle }) => {
           <div className="flex-1">
             <div className="flex items-center mb-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors.badge} mr-2`}>
-                {meeting.type.charAt(0).toUpperCase() + meeting.type.slice(1)}
+                {meeting.type ? meeting.type.charAt(0).toUpperCase() + meeting.type.slice(1) : 'General'}
               </span>
               {meeting.status === 'cancelled' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">

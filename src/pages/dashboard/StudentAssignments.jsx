@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Book, FileText, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import AssignmentSubmissionModal from '../../components/assignments/AssignmentSubmissionModal';
 import AssignmentDetailsModal from '../../components/assignments/AssignmentDetailsModal';
+import Api from '../../constant/Api';
 
-// Mock data for assignments
-const mockAssignments = [
+// Fallback mock data in case API fails
+const fallbackAssignments = [
   {
     id: '1',
     title: 'Algorithm Analysis Report',
@@ -129,10 +130,114 @@ const StudentAssignments = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
   
+  // Get user from localStorage
+  useEffect(() => {
+    try {
+      const globalState = localStorage.getItem('globalState');
+      if (globalState) {
+        const parsedState = JSON.parse(globalState);
+        if (parsedState?.user) {
+          setUser(parsedState.user);
+          console.log('User loaded from localStorage:', parsedState.user);
+          console.log('User permissions:', parsedState.user?.role?.permissions);
+        } else {
+          console.warn('No user found in global state');
+        }
+      } else {
+        console.warn('No global state found in localStorage');
+      }
+    } catch (err) {
+      console.error('Error getting user from localStorage:', err);
+    }
+  }, []);
+
+  // Fetch assignments from API
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        setLoading(true);
+        
+        // Get all assignments
+        const assignmentsResponse = await Api.get('/api/assignments');
+        
+        // Get user's submissions if logged in
+        let userSubmissions = [];
+        if (user && user.id) {
+          try {
+            // Use a separate API call with proper error handling
+            const submissionsResponse = await Api.get('/api/assignments/my-submissions');
+            if (submissionsResponse && submissionsResponse.data) {
+              userSubmissions = submissionsResponse.data;
+            }
+          } catch (submissionError) {
+            console.error('Error fetching submissions:', submissionError);
+            // Continue with empty submissions array
+          }
+        }
+        
+        // Transform assignments data
+        const transformedAssignments = assignmentsResponse.data.map(assignment => {
+          // Find user's submission for this assignment if it exists
+          const submission = userSubmissions.find(sub => sub.assignmentId === assignment.id);
+          
+          // Determine status based on deadline and submission
+          let status = assignment.status;
+          if (status === 'active') {
+            if (submission) {
+              status = 'submitted';
+            } else if (new Date(assignment.deadline) < new Date()) {
+              status = 'past';
+            } else {
+              status = 'upcoming';
+            }
+          } else if (status === 'past') {
+            status = 'past';
+          }
+          
+          return {
+            id: assignment.id,
+            title: assignment.title,
+            course: `${assignment.courseCode}: ${assignment.courseTitle}`,
+            description: assignment.description,
+            deadline: assignment.deadline,
+            assignedDate: assignment.createdAt,
+            status: status,
+            submissionType: assignment.submissionType,
+            maxMarks: 100, // Default value
+            attachments: assignment.attachments ? 
+              assignment.attachments.map(att => att.name) : [],
+            submissionDetails: submission ? {
+              submittedDate: submission.submittedAt,
+              files: [submission.submissionContent],
+              grade: submission.grade,
+              feedback: submission.feedback,
+              status: submission.status
+            } : null
+          };
+        });
+        
+        setAssignments(transformedAssignments);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+        setError('Failed to load assignments');
+        // Fall back to mock data in case of error
+        setAssignments(fallbackAssignments);
+        setLoading(false);
+      }
+    };
+    
+    fetchAssignments();
+  }, [user]);
+
   // Filter assignments based on active tab and search query
   const filteredAssignments = useMemo(() => {
-    return mockAssignments.filter(assignment => {
+    return assignments.filter(assignment => {
       // Filter by tab
       if (activeTab !== 'all' && assignment.status !== activeTab) {
         return false;
@@ -197,28 +302,97 @@ const StudentAssignments = () => {
   };
   
   // Handle assignment submission
-  const handleSubmissionComplete = (assignmentId, submissionData) => {
-    // In a real app, this would update the backend
-    // For now, we'll update our local state
-    const updatedAssignments = mockAssignments.map(assignment => {
-      if (assignment.id === assignmentId) {
-        return {
-          ...assignment,
-          status: 'submitted',
-          submissionDetails: submissionData
-        };
-      }
-      return assignment;
-    });
+  const handleSubmissionComplete = async (assignmentId, submissionData) => {
+    if (!user) {
+      alert('You must be logged in to submit assignments');
+      return;
+    }
     
-    // This would normally be handled by a state management solution
-    // For demo purposes, we're just updating the UI
-    setTimeout(() => {
-      setActiveTab('submitted');
-    }, 2500);
+    // Permission check removed as requested - all logged-in users can submit assignments
+    
+    try {
+      // Prepare submission content - could be file path, link or text
+      const submissionContent = submissionData.files && submissionData.files.length > 0 ? 
+        submissionData.files[0] : 
+        submissionData.content || '';
+      
+      console.log('Submitting assignment...');
+      console.log('Current cookies:', document.cookie);
+      
+      // Submit to backend using our configured API service
+      // The Api service already has withCredentials:true configured globally
+      const response = await Api.post('/api/assignments/submit', {
+        assignmentId: assignmentId,
+        submissionContent: submissionContent,
+        submissionType: submissionData.type || 'text' // Default to text if not specified
+      });
+      
+      // Update local state
+      const updatedAssignments = assignments.map(assignment => {
+        if (assignment.id === assignmentId) {
+          return {
+            ...assignment,
+            status: 'submitted',
+            submissionDetails: {
+              ...submissionData,
+              status: 'submitted'
+            }
+          };
+        }
+        return assignment;
+      });
+      
+      setAssignments(updatedAssignments);
+      setTimeout(() => {
+        setActiveTab('submitted');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error submitting assignment:', error);
+      console.error('Response data:', error.response?.data);
+      console.error('Status code:', error.response?.status);
+      
+      // Provide more detailed error feedback based on the error
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (error.response.status === 401) {
+          alert('Your session has expired. Please log in again.');
+        } else if (error.response.status === 403) {
+          // This shouldn't happen anymore since we removed permission checks
+          alert('Permission issue detected. Please refresh the page and try again.');
+        } else {
+          alert(`Submission failed: ${error.response.data?.detail || 'Unknown error'}. Please try again.`);
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        alert('No response from server. Please check your internet connection and try again.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        alert('Failed to submit assignment. Please try again later.');
+      }
+    }
   };
   
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-4 md:p-6 flex flex-col items-center justify-center h-screen">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Assignments</h2>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
   
   return (
     <div className="p-4 md:p-6">

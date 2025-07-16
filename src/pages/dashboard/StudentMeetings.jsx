@@ -1,9 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, Search, Filter, Clock, Archive, Plus } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Search, Filter, Clock, Archive, Plus, Loader2, AlertCircle } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { useGlobalState } from '../../context/GlobalStateProvider';
+import MeetingsApi from '../../constant/MeetingsApi';
 import MeetingCard from '../../components/meetings/MeetingCard';
 import MeetingFilters from '../../components/meetings/MeetingFilters';
 import MeetingRSVP from '../../components/meetings/MeetingRSVP';
+import RequestMeetingDialog from '../../components/meetings/RequestMeetingDialog';
 
 /*
 API Schema:
@@ -49,141 +54,127 @@ Response: {
 }
 */
 
-// Mock data for meetings
-const mockMeetings = [
-  {
-    id: 'meeting-001',
-    title: 'Final Year Project Discussion',
-    description: 'Discussion about your machine learning project progress and next steps.',
-    facultyName: 'Dr. Rashida Ahmed',
-    facultyId: 'faculty-001',
-    facultyDepartment: 'Computer Science and Engineering',
-    facultyImage: '/assets/profile-placeholder.jpg',
-    date: '2025-07-10',
-    startTime: '14:00',
-    endTime: '15:00',
-    location: 'Room 302, CSE Building',
-    type: 'academic',
-    status: 'upcoming',
-    rsvpStatus: 'confirmed',
-    rsvpDeadline: '2025-07-09',
-    notes: 'Please bring your latest experiment results and code repository access.',
-    isArchived: false
-  },
-  {
-    id: 'meeting-002',
-    title: 'Research Collaboration Opportunity',
-    description: 'Discussion about joining the NLP research team for Bangla language processing.',
-    facultyName: 'Prof. Mohammad Karim',
-    facultyId: 'faculty-002',
-    facultyDepartment: 'Computer Science and Engineering',
-    facultyImage: '/assets/profile-placeholder.jpg',
-    date: '2025-07-15',
-    startTime: '11:30',
-    endTime: '12:30',
-    location: 'Faculty Room 105, CSE Building',
-    type: 'research',
-    status: 'upcoming',
-    rsvpStatus: 'pending',
-    rsvpDeadline: '2025-07-12',
-    isArchived: false
-  },
-  {
-    id: 'meeting-003',
-    title: 'Career Guidance Session',
-    description: 'One-on-one career counseling session to discuss your post-graduation plans.',
-    facultyName: 'Dr. Fatima Khan',
-    facultyId: 'faculty-005',
-    facultyDepartment: 'Computer Science and Engineering',
-    facultyImage: '/assets/profile-placeholder.jpg',
-    date: '2025-07-20',
-    startTime: '10:00',
-    endTime: '11:00',
-    location: 'Career Center, Main Building',
-    type: 'career',
-    status: 'upcoming',
-    rsvpStatus: null,
-    rsvpDeadline: '2025-07-18',
-    isArchived: false
-  },
-  {
-    id: 'meeting-004',
-    title: 'Course Registration Guidance',
-    description: 'Meeting to discuss your course selection for the upcoming semester.',
-    facultyName: 'Prof. Aminul Haque',
-    facultyId: 'faculty-007',
-    facultyDepartment: 'Computer Science and Engineering',
-    facultyImage: '/assets/profile-placeholder.jpg',
-    date: '2025-06-15',
-    startTime: '09:30',
-    endTime: '10:00',
-    location: 'Room 201, CSE Building',
-    type: 'academic',
-    status: 'completed',
-    rsvpStatus: 'confirmed',
-    rsvpDeadline: '2025-06-14',
-    isArchived: true
-  },
-  {
-    id: 'meeting-005',
-    title: 'Thesis Defense Preparation',
-    description: 'Meeting to review your thesis presentation and prepare for defense.',
-    facultyName: 'Dr. Rashida Ahmed',
-    facultyId: 'faculty-001',
-    facultyDepartment: 'Computer Science and Engineering',
-    facultyImage: '/assets/profile-placeholder.jpg',
-    date: '2025-06-05',
-    startTime: '15:00',
-    endTime: '16:30',
-    location: 'Conference Room, CSE Building',
-    type: 'academic',
-    status: 'completed',
-    rsvpStatus: 'confirmed',
-    rsvpDeadline: '2025-06-03',
-    isArchived: true
-  }
-];
+// Using centralized MeetingsApi
 
 const StudentMeetings = () => {
-  // State for filters and selected meeting
+  const { globalState } = useGlobalState();
+  const queryClient = useQueryClient();
+  const studentId = globalState?.user?.id;
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [showRSVPDialog, setShowRSVPDialog] = useState(false);
   const [filters, setFilters] = useState({
-    search: '',
+    status: 'upcoming',
+    meeting_type: 'all_types', // Use descriptive value instead of empty string
     types: [],
-    status: 'upcoming', // 'upcoming', 'completed', 'all'
+    start_date: '',
+    end_date: '',
+    search: '',
     faculty: [],
     showArchived: false
   });
   
-  const [selectedMeeting, setSelectedMeeting] = useState(null);
-  const [isRSVPModalOpen, setIsRSVPModalOpen] = useState(false);
+  // Fetch meetings data
+  const { data: meetings = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['studentMeetings', studentId, filters],
+    queryFn: async () => {
+      console.log('Fetching meetings with filters:', filters);
+      
+      // Prepare API filters
+      const apiFilters = {
+        ...filters,
+        // Convert descriptive values back to empty strings for API
+        meeting_type: filters.meeting_type === 'all_types' ? '' : filters.meeting_type
+      };
+      
+      // Use the centralized MeetingsApi
+      const data = await MeetingsApi.listMeetings(apiFilters);
+      console.log('Meetings data from API:', data);
+      
+      // Transform the data to match the component's expectations
+      return data.map(m => ({
+        ...m,
+        id: m.id,
+        facultyImage: m.faculty?.image || '/assets/profile-placeholder.jpg',
+        facultyName: m.faculty?.name || 'Unknown Faculty',
+        facultyId: m.faculty_id,
+        facultyDepartment: m.faculty?.department || 'Unknown Department',
+        startTime: m.start_time,
+        endTime: m.end_time,
+        meetingType: m.meeting_type,
+        rsvpStatus: m.rsvp_status?.toLowerCase() || 'pending',
+        rsvpDeadline: m.rsvp_deadline,
+        // Convert backend status to frontend status format
+        status: m.status?.toLowerCase() || 'upcoming',
+        isArchived: m.status?.toUpperCase() === 'COMPLETED' || m.status?.toUpperCase() === 'CANCELLED'
+      }));
+    },
+    enabled: !!studentId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (err) => {
+      console.error('Error fetching meetings:', err);
+      toast.error('Failed to load meetings. Please try again.');
+    }
+  });
   
-  // Filter meetings based on selected filters
+  // Update RSVP mutation
+  const updateRsvpMutation = useMutation({
+    mutationFn: ({ meetingId, status, notes }) => 
+      MeetingsApi.updateRsvpStatus(meetingId, status, notes),
+    onSuccess: () => {
+      toast.success('RSVP updated successfully');
+      queryClient.invalidateQueries(['studentMeetings', studentId]);
+      setShowRSVPDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.detail || 'Failed to update RSVP');
+    }
+  });
+
+  // Handle meeting request submission
+  const handleMeetingRequested = (success) => {
+    if (success) {
+      queryClient.invalidateQueries(['studentMeetings', studentId]);
+      setShowRequestDialog(false);
+    }
+  };
+  
+  const handleRsvpUpdate = (meetingId, status, notes = '') => {
+    updateRsvpMutation.mutate({ meetingId, status, notes });
+  };
+
   const filteredMeetings = useMemo(() => {
-    return mockMeetings.filter(meeting => {
+    return meetings.filter(meeting => {
       // Search filter
       if (filters.search && !(
-        meeting.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        meeting.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        meeting.facultyName.toLowerCase().includes(filters.search.toLowerCase())
+        (meeting.title || '').toLowerCase().includes(filters.search.toLowerCase()) ||
+        (meeting.description || '').toLowerCase().includes(filters.search.toLowerCase()) ||
+        (meeting.facultyName || '').toLowerCase().includes(filters.search.toLowerCase())
       )) {
         return false;
       }
       
       // Type filter
-      if (filters.types.length > 0 && !filters.types.includes(meeting.type)) {
+      if (filters.types.length > 0 && !filters.types.includes(meeting.meetingType)) {
         return false;
       }
       
       // Status filter
-      if (filters.status === 'upcoming' && meeting.status !== 'upcoming') {
+      if (filters.status === 'upcoming' && 
+          meeting.status !== 'upcoming' && 
+          meeting.status !== 'scheduled' && 
+          meeting.status !== 'pending') {
         return false;
       }
-      if (filters.status === 'completed' && meeting.status !== 'completed') {
+      if (filters.status === 'completed' && 
+          meeting.status !== 'completed' && 
+          meeting.status !== 'cancelled') {
         return false;
       }
       
       // Faculty filter
-      if (filters.faculty.length > 0 && !filters.faculty.includes(meeting.facultyId)) {
+      if (filters.faculty && filters.faculty.length > 0 && 
+          !filters.faculty.includes(String(meeting.facultyId))) {
         return false;
       }
       
@@ -194,163 +185,172 @@ const StudentMeetings = () => {
       
       return true;
     });
-  }, [filters]);
+  }, [meetings, filters]);
+
+  const upcomingMeetings = filteredMeetings.filter(m => 
+    m.status === 'upcoming' || 
+    m.status === 'scheduled' || 
+    m.status === 'pending'
+  );
   
-  const handleRSVP = (meeting) => {
-    setSelectedMeeting(meeting);
-    // Add a small delay to prevent React state batching issues
-    setTimeout(() => {
-      setIsRSVPModalOpen(true);
-    }, 50);
-  };
+  const pastMeetings = filteredMeetings.filter(m => 
+    m.status === 'completed' || 
+    m.status === 'cancelled'
+  );
   
-  const handleRSVPSubmit = (meetingId, status, notes) => {
-    // This would be an API call in a real application
-    console.log(`RSVP for meeting ${meetingId}: ${status}`, notes);
-    
-    // Update the mock data for demonstration
-    const updatedMeetings = mockMeetings.map(meeting => {
-      if (meeting.id === meetingId) {
-        return {
-          ...meeting,
-          rsvpStatus: status
-        };
-      }
-      return meeting;
-    });
-    
-    // In a real app, we would update state with the response from the API
-    // Close modal after submission is complete
-    setTimeout(() => {
-      setIsRSVPModalOpen(false);
-      setSelectedMeeting(null);
-    }, 2500); // Allow time for success animation
-  };
-  
-  const handleArchiveToggle = (meetingId) => {
-    // This would be an API call in a real application
-    console.log(`Toggle archive for meeting ${meetingId}`);
-    
-    // Update the mock data for demonstration
-    const updatedMeetings = mockMeetings.map(meeting => {
-      if (meeting.id === meetingId) {
-        return {
-          ...meeting,
-          isArchived: !meeting.isArchived
-        };
-      }
-      return meeting;
-    });
-    
-    // In a real app, we would update state with the response from the API
-  };
+  console.log('Filtered meetings:', { 
+    all: filteredMeetings.length, 
+    upcoming: upcomingMeetings.length, 
+    past: pastMeetings.length 
+  });
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Faculty Meetings</h1>
-        <p className="text-gray-600">
-          Manage your scheduled meetings with faculty members
-        </p>
-      </div>
-      
-      {/* Filters */}
-      <MeetingFilters 
-        filters={filters} 
-        onFiltersChange={setFilters} 
-      />
-      
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="rounded-full bg-blue-100 p-3 mr-4">
-            <Calendar className="h-6 w-6 text-blue-600" />
-          </div>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <p className="text-sm text-gray-500">Upcoming Meetings</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {mockMeetings.filter(m => m.status === 'upcoming' && !m.isArchived).length}
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">My Meetings</h1>
+            <p className="mt-2 text-sm text-gray-600">View and manage your scheduled meetings</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowRequestDialog(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Plus className="-ml-1 mr-2 h-5 w-5" />
+            Request Meeting
+          </button>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="rounded-full bg-green-100 p-3 mr-4">
-            <Clock className="h-6 w-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Completed</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {mockMeetings.filter(m => m.status === 'completed' && !m.isArchived).length}
-            </p>
-          </div>
+        {/* Request Meeting Dialog */}
+        <RequestMeetingDialog 
+          isOpen={showRequestDialog} 
+          onClose={handleMeetingRequested}
+          studentId={studentId}
+        />
+        
+        {/* Filters */}
+        <div className="mb-6">
+          <MeetingFilters 
+            filters={filters} 
+            onFiltersChange={setFilters} 
+          />
         </div>
         
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="rounded-full bg-amber-100 p-3 mr-4">
-            <Archive className="h-6 w-6 text-amber-600" />
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-4 flex items-center">
+            <div className="rounded-full bg-blue-100 p-3 mr-4">
+              <Calendar className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Upcoming Meetings</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {upcomingMeetings.length}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500">Archived</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {mockMeetings.filter(m => m.isArchived).length}
-            </p>
+          
+          <div className="bg-white rounded-lg shadow p-4 flex items-center">
+            <div className="rounded-full bg-green-100 p-3 mr-4">
+              <Clock className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Completed</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {pastMeetings.length}
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 flex items-center">
+            <div className="rounded-full bg-amber-100 p-3 mr-4">
+              <Archive className="h-6 w-6 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Archived</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {meetings.filter(m => m.isArchived).length}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
       
       {/* Meetings List */}
       <div className="space-y-4">
         {filteredMeetings.length > 0 ? (
-          filteredMeetings.map((meeting, index) => (
-            <motion.div
-              key={meeting.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <MeetingCard 
-                meeting={meeting} 
-                onRSVP={handleRSVP}
-                onArchiveToggle={handleArchiveToggle}
-              />
-            </motion.div>
-          ))
+          <AnimatePresence>
+            {upcomingMeetings.length > 0 ? (
+              upcomingMeetings.map((meeting) => (
+                <motion.div
+                  key={meeting.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <MeetingCard 
+                    meeting={meeting} 
+                    onRSVP={() => {
+                      setSelectedMeeting(meeting);
+                      setShowRSVPDialog(true);
+                    }}
+                  />
+                </motion.div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>No upcoming meetings found</p>
+              </div>
+            )}
+          </AnimatePresence>
         ) : (
           <motion.div 
             className="bg-white rounded-lg shadow p-8 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900 mb-1">No meetings found</h3>
             <p className="text-gray-500 mb-4">
-              {filters.showArchived 
-                ? "No archived meetings match your filters." 
+              {filters.status === 'past' 
+                ? "No past meetings match your filters." 
                 : "No upcoming meetings match your filters."}
             </p>
             <button 
+              onClick={() => setShowRequestDialog(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="-ml-1 mr-2 h-5 w-5" />
               Request Meeting
             </button>
           </motion.div>
         )}
       </div>
       
-      {/* RSVP Modal */}
-      <MeetingRSVP
-        meeting={selectedMeeting}
-        isOpen={isRSVPModalOpen}
-        onClose={() => {
-          setIsRSVPModalOpen(false);
-          // Clear selected meeting after modal closes
-          setTimeout(() => setSelectedMeeting(null), 300);
-        }}
-        onSubmit={handleRSVPSubmit}
+      {/* Request Meeting Dialog */}
+      <RequestMeetingDialog 
+        isOpen={showRequestDialog} 
+        onClose={handleMeetingRequested}
+        studentId={studentId}
       />
+      
+      {/* RSVP Dialog */}
+      <AnimatePresence>
+        {showRSVPDialog && selectedMeeting && (
+          <MeetingRSVP 
+            meeting={selectedMeeting} 
+            onClose={() => setShowRSVPDialog(false)}
+            onConfirm={(status) => {
+              handleRsvpUpdate(selectedMeeting.id, status);
+            }}
+            isLoading={updateRsvpMutation.isLoading}
+          />
+        )}
+      </AnimatePresence>
+      </div>
     </div>
   );
 };

@@ -1,34 +1,45 @@
 /*
 API Schema:
 GET /api/assignments
-{
-  assignments: [
-    {
-      id: string,
-      title: string,
-      courseCode: string,
-      courseTitle: string,
-      semester: number,
-      batch: string,
-      deadline: string (ISO date),
-      description: string,
-      attachments: string[],
-      submissionType: "file" | "link" | "text",
-      status: "active" | "past" | "draft",
-      facultyName: string,
-      createdAt: string (ISO date),
-      updatedAt: string (ISO date)
-    }
-  ]
-}
+Response:
+[
+  {
+    id: number,
+    title: string,
+    courseCode: string,
+    courseTitle: string,
+    semester: number,
+    batch: string,
+    deadline: string (ISO date),
+    description: string,
+    attachments: [{ name: string, url: string }] | null,
+    submissionType: "file" | "link" | "text",
+    status: "active" | "past" | "draft",
+    facultyName: string,
+    createdAt: string (ISO date),
+    updatedAt: string (ISO date)
+  }
+]
 
 POST /api/assignments/submit
+Request:
 {
-  assignmentId: string,
-  studentId: string,
+  assignmentId: number,
   submissionContent: string, // file path, link URL, or text content
-  submissionType: "file" | "link" | "text",
-  submittedAt: string (ISO date)
+  submissionType: "file" | "link" | "text"
+}
+Response:
+{
+  id: number,
+  assignmentId: number,
+  studentId: number,
+  submissionContent: string,
+  submissionType: string,
+  submittedAt: string (ISO date),
+  status: string,
+  grade: number | null,
+  feedback: string | null,
+  gradedAt: string (ISO date) | null
 }
 */
 
@@ -52,12 +63,37 @@ const Assignments = () => {
     status: 'active' // Default to active assignments
   });
 
+  // Get user info from localStorage
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    try {
+      const globalState = localStorage.getItem('globalState');
+      if (globalState) {
+        const parsedState = JSON.parse(globalState);
+        if (parsedState?.user) {
+          setUser(parsedState.user);
+        }
+      }
+    } catch (err) {
+      console.error('Error getting user from localStorage:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
         setLoading(true);
-        const response = await Api.get('api/assignments');
-        setAssignments(response.data);
+        const response = await Api.get('/api/assignments');
+        
+        // Transform data if needed
+        const transformedData = response.data.map(assignment => ({
+          ...assignment,
+          // Ensure all expected fields are present
+          attachments: assignment.attachments || []
+        }));
+        
+        setAssignments(transformedData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching assignments:', error);
@@ -343,7 +379,34 @@ const Assignments = () => {
                       )}
                       
                       {assignment.status === 'active' && (
-                        <button className="flex items-center px-3 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors">
+                        <button 
+                          onClick={async () => {
+                            if (!user) {
+                              alert('Please log in to submit assignments');
+                              return;
+                            }
+                            
+                            // In a real implementation, you would open a modal for submission
+                            // This is a simplified version
+                            const submissionContent = prompt('Enter your submission content:');
+                            if (!submissionContent) return;
+                            
+                            try {
+                              const response = await Api.post('/api/assignments/submit', {
+                                assignmentId: assignment.id,
+                                submissionContent,
+                                submissionType: assignment.submissionType
+                              });
+                              
+                              alert('Assignment submitted successfully!');
+                              // In a real app, you would update the UI to reflect the submission
+                            } catch (error) {
+                              console.error('Error submitting assignment:', error);
+                              alert('Failed to submit assignment. Please try again.');
+                            }
+                          }}
+                          className="flex items-center px-3 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                        >
                           <Upload size={16} className="mr-1" />
                           Submit
                         </button>

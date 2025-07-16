@@ -1,6 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient();
 
 // Layout Components
 import Navbar from './components/layout/Navbar';
@@ -34,6 +38,8 @@ import StudentDashboard from './pages/dashboard/StudentDashboard';
 import StudentMeetings from './pages/dashboard/StudentMeetings';
 import StudentAssignments from './pages/dashboard/StudentAssignments';
 import StudentFees from './pages/dashboard/StudentFees';
+import StudentCourses from './pages/dashboard/StudentCourses';
+import StudentExams from './pages/dashboard/StudentExams';
 import FacultyDashboard from './pages/dashboard/FacultyDashboard';
 import FacultyMeetings from './pages/dashboard/FacultyMeetings';
 
@@ -43,6 +49,7 @@ import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <Router>
       <Routes>
         {/* Public Routes with Navbar and Footer */}
@@ -88,21 +95,24 @@ function App() {
         
         {/* Dashboard Routes - No Navbar/Footer */}
         <Route path="student/*" element={<StudentDashboard />}>
-          <Route path="dashboard" element={<Navigate to="/student/meetings" replace />} />
+          <Route index element={<Navigate to="meetings" replace />} />
           <Route path="meetings" element={<StudentMeetings />} />
           <Route path="assignments" element={<StudentAssignments />} />
           <Route path="fees" element={<StudentFees />} />
+          <Route path="courses" element={<StudentCourses />} />
+          <Route path="exams" element={<StudentExams />} />
         </Route>
         
         <Route path="faculty/*" element={<FacultyDashboard />}>
-          <Route path="dashboard" element={<Navigate to="/faculty/meetings" replace />} />
+          <Route index element={<Navigate to="meetings" replace />} />
           <Route path="meetings" element={<FacultyMeetings />} />
         </Route>
       </Routes>
 
       <Toaster />
     </Router>
-  )
+    </QueryClientProvider>
+  );
 }
 
 export default App

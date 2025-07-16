@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import cseduLogo from '../../assets/csedu_logo.png'
+import { useGlobalState } from '../../context/GlobalStateProvider';
+import { toast } from 'react-hot-toast';
+import Api from '../../constant/Api';
 
 import { 
   Calendar, 
@@ -23,16 +26,74 @@ const StudentDashboard = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { globalState, setGlobalState } = useGlobalState();
+  const [loading, setLoading] = useState(true);
+  const [studentData, setStudentData] = useState(null);
   
-  // Mock user data - will be replaced with actual API data later
-  const user = {
-    name: 'Tanvir Ahmed',
-    id: '2018-1-60-001',
-    email: 'tanvir@cse.du.ac.bd',
-    role: 'student',
-    department: 'Computer Science and Engineering',
-    batch: '2018',
-    profileImage: '/assets/profile-placeholder.jpg'
+  // Get user data from global state
+  const user = globalState?.user || {};
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    console.log('Current global state:', globalState);
+    
+    // Check if user exists in global state
+    if (!globalState?.user) {
+      toast.error('Please login to access the dashboard');
+      navigate('/login');
+      return;
+    }
+    
+    // Check if user has a role property
+    if (!globalState?.user?.role) {
+      console.error('User object exists but missing role information:', globalState.user);
+      toast.error('User role information missing. Please login again.');
+      navigate('/login');
+      return;
+    }
+    
+    // Check if user has the correct role
+    const userRole = globalState?.user?.role?.name?.toLowerCase();
+    console.log('User role:', userRole);
+    
+    if (userRole !== 'student') {
+      toast.error('Unauthorized access - Student access only');
+      navigate('/');
+      return;
+    }
+    
+    // If we reach here, user is authenticated and has correct role
+    fetchStudentData();
+  }, [globalState?.user]);
+  
+  const fetchStudentData = async () => {
+    try {
+      setLoading(true);
+      // In a production environment, you would fetch data from the API
+      // const response = await Api.get(`/api/students/${user.id}`);
+      // setStudentData(response.data);
+      
+      console.log('Fetching student data from user:', user);
+      
+      // For now, we'll just use the user data from global state
+      setStudentData({
+        name: user.name || 'Student User',
+        id: user.id?.toString() || '',
+        email: user.email || '',
+        role: user.role?.name?.toLowerCase() || 'student',
+        department: user.department || 'Computer Science and Engineering',
+        batch: user.batch || '',
+        profileImage: user.profileImage || '/assets/profile-placeholder.jpg',
+        permissions: user.role?.permissions || []
+      });
+      
+      console.log('Student data set successfully');
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+      toast.error('Failed to load student data');
+      setLoading(false);
+    }
   };
 
   const sidebarItems = [
@@ -69,8 +130,11 @@ const StudentDashboard = () => {
   ];
 
   const handleLogout = () => {
-    // Will implement actual logout logic later
-    navigate('/login');
+    // Clear user data from global state
+    setGlobalState(prev => ({ ...prev, user: null }));
+    localStorage.removeItem('globalState');
+    toast.success('Successfully signed out');
+    navigate('/');
   };
 
   const toggleSidebar = () => {
@@ -218,27 +282,37 @@ const StudentDashboard = () => {
           animate={{ width: isSidebarOpen ? 256 : 80 }}
           transition={{ duration: 0.2 }}
         >
-          <div className={`p-4 ${!isSidebarOpen && 'flex justify-center'} border-b border-gray-200`}>
-            {isSidebarOpen ? (
-              <div className="flex items-center">
-                <img
-                  className="h-10 w-10 rounded-full object-cover"
-                  src={user.profileImage}
-                  alt={user.name}
-                />
-                <div className="ml-3">
-                  <p className="text-base font-medium text-gray-800">{user.name}</p>
-                  <p className="text-sm font-medium text-gray-500">{user.id}</p>
+          {/* User Profile Info */}
+          {isSidebarOpen && (
+            <div className="flex-shrink-0 flex flex-col items-center px-4 pt-4 pb-2 border-t border-gray-200">
+              {loading ? (
+                <div className="animate-pulse flex flex-col items-center">
+                  <div className="h-16 w-16 rounded-full bg-gray-200 mb-2"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 w-20 bg-gray-200 rounded"></div>
                 </div>
-              </div>
-            ) : (
-              <img
-                className="h-10 w-10 rounded-full object-cover"
-                src={user.profileImage}
-                alt={user.name}
-              />
-            )}
-          </div>
+              ) : (
+                <>
+                  <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                    {studentData && studentData.profileImage ? (
+                      <img 
+                        src={studentData.profileImage} 
+                        alt={studentData.name} 
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-8 w-8 text-blue-600" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-sm font-medium text-gray-900">{studentData && studentData.name}</h3>
+                    <p className="text-xs text-gray-500">{studentData && studentData.id}</p>
+                    <p className="text-xs text-gray-500 mt-1">{studentData && studentData.department}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           
           <div className="flex-1 pt-2 pb-4">
             <nav className="mt-2 px-2 space-y-1">

@@ -85,8 +85,22 @@ const MeetingsApi = {
     try {
       const params = new URLSearchParams();
       
-      if (filters.status) params.append('status', filters.status);
-      if (filters.meeting_type) params.append('meeting_type', filters.meeting_type);
+      // Handle status case sensitivity - backend expects uppercase for enum values
+      if (filters.status) {
+        // Special case for 'upcoming' which is handled differently in the backend
+        if (filters.status.toLowerCase() === 'upcoming') {
+          params.append('status', 'upcoming');
+        } else {
+          // For other statuses, ensure they're uppercase to match backend enum values
+          params.append('status', filters.status.toUpperCase());
+        }
+      }
+      
+      // Handle meeting_type case sensitivity - backend expects uppercase for enum values
+      if (filters.meeting_type && filters.meeting_type !== 'all_types') {
+        params.append('meeting_type', filters.meeting_type.toUpperCase());
+      }
+      
       if (filters.start_date) params.append('start_date', filters.start_date);
       if (filters.end_date) params.append('end_date', filters.end_date);
       if (filters.search) params.append('search', filters.search);
@@ -127,18 +141,18 @@ const MeetingsApi = {
    */
   createMeeting: async (meetingData) => {
     try {
-      // Ensure meeting_type is lowercase to match backend enum values
+      // Ensure meeting_type is uppercase to match backend enum values
       if (meetingData.meeting_type) {
-        meetingData.meeting_type = meetingData.meeting_type.toLowerCase();
+        meetingData.meeting_type = meetingData.meeting_type.toUpperCase();
       }
       
-      // Ensure status and rsvp_status are lowercase to match backend enum values
+      // Ensure status and rsvp_status are uppercase to match backend enum values
       if (meetingData.status) {
-        meetingData.status = meetingData.status.toLowerCase();
+        meetingData.status = meetingData.status.toUpperCase();
       }
       
       if (meetingData.rsvp_status) {
-        meetingData.rsvp_status = meetingData.rsvp_status.toLowerCase();
+        meetingData.rsvp_status = meetingData.rsvp_status.toUpperCase();
       }
       
       // Log the user state before making the request
@@ -244,6 +258,20 @@ const MeetingsApi = {
    */
   updateMeeting: async (meetingId, updateData) => {
     try {
+      // Ensure meeting_type is uppercase to match backend enum values
+      if (updateData.meeting_type) {
+        updateData.meeting_type = updateData.meeting_type.toUpperCase();
+      }
+      
+      // Ensure status and rsvp_status are uppercase to match backend enum values
+      if (updateData.status) {
+        updateData.status = updateData.status.toUpperCase();
+      }
+      
+      if (updateData.rsvp_status) {
+        updateData.rsvp_status = updateData.rsvp_status.toUpperCase();
+      }
+      
       const response = await Api.put(`/api/meetings/${meetingId}`, updateData);
       return response.data;
     } catch (error) {

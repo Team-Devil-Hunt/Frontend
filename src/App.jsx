@@ -42,6 +42,14 @@ import StudentCourses from './pages/dashboard/StudentCourses';
 import StudentExams from './pages/dashboard/StudentExams';
 import FacultyDashboard from './pages/dashboard/FacultyDashboard';
 import FacultyMeetings from './pages/dashboard/FacultyMeetings';
+import FacultyCourses from './pages/dashboard/FacultyCourses';
+import FacultyAssignments from './pages/dashboard/FacultyAssignments';
+import FacultyAssignmentDetail from './pages/dashboard/FacultyAssignmentDetail';
+import FacultyCreateAssignment from './pages/dashboard/FacultyCreateAssignment';
+import FacultyStudents from './pages/dashboard/FacultyStudents';
+import FacultyStudentAttendanceDetail from './pages/dashboard/FacultyStudentAttendanceDetail';
+import FacultyCourseAttendanceSummary from './pages/dashboard/FacultyCourseAttendanceSummary';
+import FacultyCourseDetails from './pages/dashboard/FacultyCourseDetails';
 
 
 
@@ -106,6 +114,14 @@ function App() {
         <Route path="faculty/*" element={<FacultyDashboard />}>
           <Route index element={<Navigate to="meetings" replace />} />
           <Route path="meetings" element={<FacultyMeetings />} />
+          <Route path="courses" element={<FacultyCourses />} />
+          <Route path="assignments" element={<FacultyAssignments />} />
+          <Route path="assignments/create" element={<FacultyCreateAssignment />} />
+          <Route path="assignments/:assignmentId" element={<FacultyAssignmentDetail />} />
+          <Route path="students" element={<FacultyStudents />} />
+          <Route path="students/:courseId/:studentId" element={<FacultyStudentAttendanceDetail />} />
+          <Route path="students/course/:courseId" element={<FacultyCourseAttendanceSummary />} />
+          <Route path="courses/:courseId" element={<FacultyCourseDetails />} />
         </Route>
       </Routes>
 

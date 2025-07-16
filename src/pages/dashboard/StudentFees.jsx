@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, CreditCard, Calendar, Download, ExternalLink, Filter, ArrowUpDown, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { getStudentFees } from '../../constant/StudentFeesApi';
 
 // Mock API data for fees
 // Schema:
@@ -137,6 +138,13 @@ const mockFeeData = {
 const StudentFees = () => {
   const [activeTab, setActiveTab] = useState('current');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [feeData, setFeeData] = useState({
+    currentSemester: '',
+    fees: [],
+    transactions: []
+  });
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -174,27 +182,49 @@ const StudentFees = () => {
     }
   };
   
+  // Fetch fee data when component mounts
+  useEffect(() => {
+    const fetchFeeData = async () => {
+      try {
+        setLoading(true);
+        // In a real app, you'd get the student ID from auth context or similar
+        // For now, we'll use a hardcoded student ID
+        const studentId = 210; // Using a valid student ID from our database
+        const data = await getStudentFees(studentId);
+        setFeeData(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching fee data:', err);
+        setError('Failed to load fee data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeeData();
+  }, []);
+
   // Filter fees based on search query
   const filteredFees = useMemo(() => {
-    if (!searchQuery) return mockFeeData.feeStructure;
+    if (!searchQuery) return feeData.fees;
     
     const query = searchQuery.toLowerCase();
-    return mockFeeData.feeStructure.filter(fee => 
+    return feeData.fees?.filter(fee => 
       fee.name.toLowerCase().includes(query) ||
       fee.description.toLowerCase().includes(query)
-    );
-  }, [searchQuery]);
+    ) || [];
+  }, [searchQuery, feeData.fees]);
   
   // Filter transactions based on search query
   const filteredTransactions = useMemo(() => {
-    if (!searchQuery) return mockFeeData.transactions;
+    if (!searchQuery) return feeData.transactions;
     
     const query = searchQuery.toLowerCase();
-    return mockFeeData.transactions.filter(transaction => 
+    return feeData.transactions?.filter(transaction => 
       transaction.description.toLowerCase().includes(query) ||
-      transaction.paymentMethod.toLowerCase().includes(query)
-    );
-  }, [searchQuery]);
+      transaction.payment_method.toLowerCase().includes(query)
+    ) || [];
+  }, [searchQuery, feeData.transactions]);
   
   return (
     <div className="p-4 md:p-6">
@@ -251,31 +281,31 @@ const StudentFees = () => {
         <div>
           {/* Summary Card */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Current Semester: {mockFeeData.currentSemester}</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Current Semester: {feeData.current_semester || 'Loading...'}</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-sm text-blue-600 font-medium">Total Fees</p>
                 <p className="text-2xl font-bold text-blue-700">
-                  {formatCurrency(mockFeeData.feeStructure.reduce((sum, fee) => sum + fee.amount, 0))}
+                  {formatCurrency(feeData.fees?.reduce((sum, fee) => sum + fee.amount, 0) || 0)}
                 </p>
               </div>
               
               <div className="bg-green-50 rounded-lg p-4">
                 <p className="text-sm text-green-600 font-medium">Paid Amount</p>
                 <p className="text-2xl font-bold text-green-700">
-                  {formatCurrency(mockFeeData.feeStructure
-                    .filter(fee => fee.status === 'paid')
-                    .reduce((sum, fee) => sum + fee.amount, 0))}
+                  {formatCurrency(feeData.fees
+                    ?.filter(fee => fee.status === 'PAID')
+                    .reduce((sum, fee) => sum + fee.amount, 0) || 0)}
                 </p>
               </div>
               
               <div className="bg-red-50 rounded-lg p-4">
                 <p className="text-sm text-red-600 font-medium">Due Amount</p>
                 <p className="text-2xl font-bold text-red-700">
-                  {formatCurrency(mockFeeData.feeStructure
-                    .filter(fee => fee.status !== 'paid')
-                    .reduce((sum, fee) => sum + fee.amount, 0))}
+                  {formatCurrency(feeData.fees
+                    ?.filter(fee => fee.status !== 'PAID')
+                    .reduce((sum, fee) => sum + fee.amount, 0) || 0)}
                 </p>
               </div>
             </div>
@@ -284,7 +314,7 @@ const StudentFees = () => {
           {/* Fee Cards */}
           <div className="space-y-4">
             {filteredFees.map(fee => {
-              const timeRemaining = fee.status !== 'paid' ? getTimeRemaining(fee.deadline) : null;
+              const timeRemaining = fee.status !== 'PAID' ? getTimeRemaining(fee.deadline) : null;
               
               return (
                 <motion.div
@@ -309,12 +339,12 @@ const StudentFees = () => {
                     
                     <div className="mt-4 flex justify-between items-center">
                       <div className="flex items-center">
-                        {fee.status === 'paid' ? (
+                        {fee.status === 'PAID' ? (
                           <div className="flex items-center text-green-600">
                             <CheckCircle size={18} className="mr-1" />
-                            <span className="text-sm font-medium">Paid on {formatDate(fee.paidDate)}</span>
+                            <span className="text-sm font-medium">Paid on {formatDate(fee.paid_date)}</span>
                           </div>
-                        ) : fee.status === 'overdue' ? (
+                        ) : fee.status === 'OVERDUE' ? (
                           <div className="flex items-center text-red-600">
                             <AlertCircle size={18} className="mr-1" />
                             <span className="text-sm font-medium">Overdue</span>
@@ -327,7 +357,7 @@ const StudentFees = () => {
                         )}
                       </div>
                       
-                      {fee.status !== 'paid' ? (
+                      {fee.status !== 'PAID' ? (
                         <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors">
                           Pay Now
                         </button>
@@ -339,9 +369,9 @@ const StudentFees = () => {
                       )}
                     </div>
                     
-                    {fee.status === 'paid' && fee.transactionId && (
+                    {fee.status === 'PAID' && fee.transactions && fee.transactions.length > 0 && (
                       <div className="mt-2 text-xs text-gray-500">
-                        Transaction ID: {fee.transactionId}
+                        Transaction ID: {fee.transactions[0].transaction_id}
                       </div>
                     )}
                   </div>
@@ -375,25 +405,25 @@ const StudentFees = () => {
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-sm text-blue-600 font-medium">Total Transactions</p>
                 <p className="text-2xl font-bold text-blue-700">
-                  {mockFeeData.transactions.length}
+                  {feeData.transactions?.length || 0}
                 </p>
               </div>
               
               <div className="bg-green-50 rounded-lg p-4">
                 <p className="text-sm text-green-600 font-medium">Total Paid</p>
                 <p className="text-2xl font-bold text-green-700">
-                  {formatCurrency(mockFeeData.transactions
-                    .filter(txn => txn.status === 'completed')
-                    .reduce((sum, txn) => sum + txn.amount, 0))}
+                  {formatCurrency(feeData.transactions
+                    ?.filter(txn => txn.status === 'COMPLETED')
+                    .reduce((sum, txn) => sum + txn.amount, 0) || 0)}
                 </p>
               </div>
               
               <div className="bg-amber-50 rounded-lg p-4">
                 <p className="text-sm text-amber-600 font-medium">Pending Payments</p>
                 <p className="text-2xl font-bold text-amber-700">
-                  {formatCurrency(mockFeeData.transactions
-                    .filter(txn => txn.status === 'pending')
-                    .reduce((sum, txn) => sum + txn.amount, 0))}
+                  {formatCurrency(feeData.transactions
+                    ?.filter(txn => txn.status === 'PENDING')
+                    .reduce((sum, txn) => sum + txn.amount, 0) || 0)}
                 </p>
               </div>
             </div>
@@ -444,14 +474,14 @@ const StudentFees = () => {
                         {formatCurrency(transaction.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.paymentMethod}
+                        {transaction.payment_method}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {transaction.status === 'completed' ? (
+                        {transaction.status === 'COMPLETED' ? (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                             Completed
                           </span>
-                        ) : transaction.status === 'pending' ? (
+                        ) : transaction.status === 'PENDING' ? (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                             Pending
                           </span>
@@ -462,10 +492,12 @@ const StudentFees = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.receiptUrl && (
-                          <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                            <Download size={16} />
-                          </button>
+                        {transaction.receipt_url && (
+                          <a href={transaction.receipt_url} target="_blank" rel="noopener noreferrer">
+                            <button className="text-indigo-600 hover:text-indigo-900 mr-3">
+                              <Download size={16} />
+                            </button>
+                          </a>
                         )}
                         <button className="text-gray-600 hover:text-gray-900">
                           <ExternalLink size={16} />

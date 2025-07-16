@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import cseduLogo from '../../assets/csedu_logo.png'
+import defaultUserImg from '../../assets/default_user.png'
 import { useGlobalState } from '../../context/GlobalStateProvider';
 import { toast } from 'react-hot-toast';
 import Api from '../../constant/Api';
@@ -83,7 +84,7 @@ const StudentDashboard = () => {
         role: user.role?.name?.toLowerCase() || 'student',
         department: user.department || 'Computer Science and Engineering',
         batch: user.batch || '',
-        profileImage: user.profileImage || '/assets/profile-placeholder.jpg',
+        profileImage: defaultUserImg,
         permissions: user.role?.permissions || []
       });
       
@@ -182,7 +183,7 @@ const StudentDashboard = () => {
             <div className="flex items-center">
               <img
                 className="h-8 w-8 rounded-full object-cover"
-                src={user.profileImage}
+                src={defaultUserImg}
                 alt={user.name}
               />
               <span className="hidden md:block ml-2 text-sm font-medium text-gray-700">{user.name}</span>
@@ -212,7 +213,7 @@ const StudentDashboard = () => {
                 <div className="flex items-center">
                   <img
                     className="h-10 w-10 rounded-full object-cover"
-                    src={user.profileImage}
+                    src={defaultUserImg}
                     alt={user.name}
                   />
                   <div className="ml-3">
@@ -294,15 +295,11 @@ const StudentDashboard = () => {
               ) : (
                 <>
                   <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-                    {studentData && studentData.profileImage ? (
-                      <img 
-                        src={studentData.profileImage} 
-                        alt={studentData.name} 
-                        className="h-16 w-16 rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-8 w-8 text-blue-600" />
-                    )}
+                    <img
+                      src={defaultUserImg} 
+                      alt={studentData?.name || 'Student'}
+                      className="h-16 w-16 rounded-full object-cover"
+                    />
                   </div>
                   <div className="text-center">
                     <h3 className="text-sm font-medium text-gray-900">{studentData && studentData.name}</h3>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ import ExamTimetables from './pages/ExamTimetables';
 import Assignments from './pages/Assignments';
 import Login from './pages/Login';
 import Notices from './pages/Notices';
+import NoticeDetail from './pages/NoticeDetail';
 import Meetings from './pages/Meetings';
 import Events from './pages/Events';
 import Fees from './pages/Fees';
@@ -80,7 +82,8 @@ function App() {
         >
           <Route index element={<Home />} />
           <Route path="faculty" element={<Faculty />} />
-          <Route path="faculty/:id" element={<FacultyProfile />} />
+          <Route path="faculty-members" element={<Faculty />} />
+          <Route path="faculty-member/:id" element={<FacultyProfile />} />
           <Route path="programs" element={<Programs />} />
           <Route path="courses" element={<Courses />} />
           <Route path="admissions" element={<Admissions />} />
@@ -92,6 +95,7 @@ function App() {
           <Route path="exam-timetables" element={<ExamTimetables />} />
           <Route path="login" element={<Login />} />
           <Route path="notices" element={<Notices />} />
+          <Route path="notices/:id" element={<NoticeDetail />} />
           <Route path="meetings" element={<Meetings />} />
           <Route path="events" element={<Events />} />
           <Route path="fees" element={<Fees />} />
@@ -102,26 +106,32 @@ function App() {
         </Route>
         
         {/* Dashboard Routes - No Navbar/Footer */}
-        <Route path="student/*" element={<StudentDashboard />}>
-          <Route index element={<Navigate to="meetings" replace />} />
-          <Route path="meetings" element={<StudentMeetings />} />
-          <Route path="assignments" element={<StudentAssignments />} />
-          <Route path="fees" element={<StudentFees />} />
-          <Route path="courses" element={<StudentCourses />} />
-          <Route path="exams" element={<StudentExams />} />
+        {/* Protected Student Dashboard Routes */}
+        <Route element={<ProtectedRoute requiredRole="student" />}>
+          <Route path="student/*" element={<StudentDashboard />}>
+            <Route index element={<Navigate to="meetings" replace />} />
+            <Route path="meetings" element={<StudentMeetings />} />
+            <Route path="assignments" element={<StudentAssignments />} />
+            <Route path="fees" element={<StudentFees />} />
+            <Route path="courses" element={<StudentCourses />} />
+            <Route path="exams" element={<StudentExams />} />
+          </Route>
         </Route>
         
-        <Route path="faculty/*" element={<FacultyDashboard />}>
-          <Route index element={<Navigate to="meetings" replace />} />
-          <Route path="meetings" element={<FacultyMeetings />} />
-          <Route path="courses" element={<FacultyCourses />} />
-          <Route path="assignments" element={<FacultyAssignments />} />
-          <Route path="assignments/create" element={<FacultyCreateAssignment />} />
-          <Route path="assignments/:assignmentId" element={<FacultyAssignmentDetail />} />
-          <Route path="students" element={<FacultyStudents />} />
-          <Route path="students/:courseId/:studentId" element={<FacultyStudentAttendanceDetail />} />
-          <Route path="students/course/:courseId" element={<FacultyCourseAttendanceSummary />} />
-          <Route path="courses/:courseId" element={<FacultyCourseDetails />} />
+        {/* Protected Faculty Dashboard Routes */}
+        <Route element={<ProtectedRoute requiredRole="faculty" />}>
+          <Route path="faculty/*" element={<FacultyDashboard />}>
+            <Route index element={<Navigate to="meetings" replace />} />
+            <Route path="meetings" element={<FacultyMeetings />} />
+            <Route path="courses" element={<FacultyCourses />} />
+            <Route path="assignments" element={<FacultyAssignments />} />
+            <Route path="assignments/create" element={<FacultyCreateAssignment />} />
+            <Route path="assignments/:assignmentId" element={<FacultyAssignmentDetail />} />
+            <Route path="students" element={<FacultyStudents />} />
+            <Route path="students/:courseId/:studentId" element={<FacultyStudentAttendanceDetail />} />
+            <Route path="students/course/:courseId" element={<FacultyCourseAttendanceSummary />} />
+            <Route path="courses/:courseId" element={<FacultyCourseDetails />} />
+          </Route>
         </Route>
       </Routes>
 

@@ -385,7 +385,6 @@ const ExamTimetables = () => {
           )}
         </motion.div>
       </div>
-      <Footer />
     </>
   );
 };

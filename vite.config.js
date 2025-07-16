@@ -9,6 +9,7 @@ export default defineConfig({
     host: true, // Listen on all addresses
     port: 5173,
     strictPort: true,
+    allowedHosts: true,
     hmr: {
       clientPort: 5173, // Use the same port for WebSocket connections
     },

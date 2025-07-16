@@ -1,11 +1,11 @@
-import React, { useState, useMemo , useEffect} from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, XCircle, Calendar, Clock, MapPin, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import LabBookingModal from '../components/lab/LabBookingModal';
 
-import Api from '../constant/Api'
+import Api from '../constant/Api';
 
 // Mock API data for lab booking
 // Schema:
@@ -159,8 +159,6 @@ const LabBooking = () => {
   const [selectedLab, setSelectedLab] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userBookings, setUserBookings] = useState([]);
-
-
   const [labs, setLabs] = useState([]);
   const [bookings, setBookings] = useState([]);
 
@@ -168,9 +166,22 @@ const LabBooking = () => {
     const fetchLabs = async () => {
       try {
         const response = await Api.get('api/labs');
-        setLabs(response.data);
+        // Transform the API response to match the expected format
+        const transformedLabs = response.data.map(lab => ({
+          ...lab,
+          // Map time_slots to availableTimeSlots and add isBooked property
+          availableTimeSlots: lab.time_slots ? lab.time_slots.map(slot => ({
+            id: slot.id,
+            day: slot.day,
+            startTime: slot.start_time,
+            endTime: slot.end_time,
+            isBooked: false // Default to not booked
+          })) : []
+        }));
+        setLabs(transformedLabs);
+        console.log('Transformed labs:', transformedLabs);
       } catch (error) {
-        console.log(error);
+        console.error('Error fetching labs:', error);
       }
     };
     fetchLabs();
@@ -180,38 +191,36 @@ const LabBooking = () => {
     const fetchBookings = async () => {
       try {
         const response = await Api.get('api/lab-bookings');
-        setBookings(response.data);
+        setBookings(response.data || []);
+        
+        // Mark booked time slots
+        if (response.data && response.data.length > 0 && labs.length > 0) {
+          const updatedLabs = labs.map(lab => {
+            const labBookings = response.data.filter(booking => booking.labId === lab.id);
+            
+            const updatedTimeSlots = lab.availableTimeSlots.map(slot => {
+              const isSlotBooked = labBookings.some(booking => 
+                booking.timeSlotId === slot.id && booking.status !== 'rejected'
+              );
+              return { ...slot, isBooked: isSlotBooked };
+            });
+            
+            return { ...lab, availableTimeSlots: updatedTimeSlots };
+          });
+          
+          setLabs(updatedLabs);
+        }
       } catch (error) {
-        console.log(error);
+        console.error('Error fetching bookings:', error);
       }
     };
-    fetchBookings();
-  }, []);
+    
+    if (labs.length > 0) {
+      fetchBookings();
+    }
+  }, [labs.length]);
   
-  // Filter labs based on search query and selected day
-  // const filteredLabs = useMemo(() => {
-  //   return labs.filter(lab => {
-  //     // Filter by search query
-  //     if (searchQuery) {
-  //       const query = searchQuery.toLowerCase();
-  //       const matchesQuery = (
-  //         lab.name.toLowerCase().includes(query) ||
-  //         lab.description.toLowerCase().includes(query) ||
-  //         lab.location.toLowerCase().includes(query) ||
-  //         lab.facilities.some(facility => facility.toLowerCase().includes(query))
-  //       );
-  //       if (!matchesQuery) return false;
-  //     }
-      
-  //     // Filter by day
-  //     if (selectedDay !== 'all') {
-  //       const hasSelectedDay = lab.availableTimeSlots.some(slot => slot.day === selectedDay);
-  //       if (!hasSelectedDay) return false;
-  //     }
-      
-  //     return true;
-  //   });
-  // }, [searchQuery, selectedDay]);
+  // This commented code is no longer needed
 
   
   // new filter
@@ -252,22 +261,76 @@ const LabBooking = () => {
     return ['all', ...Array.from(days)];
   }, []);
   
+  const openBookingModal = (lab) => {
+    // Transform the lab data to include time_slots if needed
+    const labWithTimeSlots = {
+      ...lab,
+      // Ensure time_slots exists for the hardcoded time slot ID
+      time_slots: lab.time_slots || [{
+        id: 1,
+        day: 'Monday',
+        start_time: '09:00',
+        end_time: '11:00'
+      }]
+    };
+    
+    setSelectedLab(labWithTimeSlots);
+    setIsModalOpen(true);
+  };
+  
+  const handleBookingSubmit = (bookingData) => {
+    // In a real app, you would send this to your API
+    console.log('Booking submitted:', bookingData);
+    
+    // Add user information from authentication (simulated here)
+    const completeBookingData = {
+      ...bookingData,
+      userId: 1, // This would come from authentication
+      userName: 'Student User', // This would come from authentication
+      userRole: 'Student', // This would come from authentication
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Make API call to create booking
+    const createBooking = async () => {
+      try {
+        // In a real app, this would be an actual API call
+        // const response = await Api.post('api/lab-bookings', completeBookingData);
+        console.log('Booking created:', completeBookingData);
+        
+        // Add the new booking to the user's bookings
+        setUserBookings(prevBookings => [...prevBookings, completeBookingData]);
+        
+        // Refresh bookings after submission
+        // fetchBookings();
+      } catch (error) {
+        console.error('Error creating booking:', error);
+      }
+    };
+    
+    createBooking();
+  };  
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Lab Booking</h1>
-        <p className="text-gray-600 mb-8">
-          Book computer labs for your research projects, coursework, and academic activities.
-        </p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pt-6 pb-12 px-4">
+        <div className="container mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-indigo-800 mb-3">Lab Booking</h1>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Book computer labs for your research projects, coursework, and academic activities.
+          </p>
+        </div>
         
         {/* Search and Filter Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-l-4 border-indigo-500">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative w-full md:w-1/2">
               <input
                 type="text"
                 placeholder="Search labs by name, facilities, or location..."
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -276,7 +339,7 @@ const LabBooking = () => {
             
             <div className="w-full md:w-auto z-10">
               <select
-                className="pl-4 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="pl-4 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200"
                 value={selectedDay}
                 onChange={(e) => setSelectedDay(e.target.value)}
               >
@@ -291,42 +354,43 @@ const LabBooking = () => {
         </div>
         
         {/* Lab Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
           {filteredLabs.map(lab => (
             <motion.div
               key={lab.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col"
+              className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-indigo-100"
             >
               {/* Lab Image/Placeholder */}
-              <div className="h-48 bg-gray-200 relative">
-                <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-sm font-medium">
-                  Capacity: {lab.capacity}
+              <div className="h-48 bg-gradient-to-r from-indigo-500 to-purple-600 relative">
+                <div className="absolute top-3 right-3 bg-white text-indigo-700 px-3 py-1 text-sm font-medium rounded-full shadow-md">
+                  <Users className="inline-block mr-1" size={16} /> {lab.capacity}
                 </div>
                 {/* Placeholder for lab image */}
-                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                  <span className="text-gray-500 text-lg">{lab.name}</span>
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-white text-xl font-bold">{lab.name}</span>
                 </div>
               </div>
               
               {/* Lab Details */}
               <div className="p-6 flex-grow">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{lab.name}</h3>
+                <h3 className="text-xl font-bold text-indigo-800 mb-2">{lab.name}</h3>
                 <p className="text-gray-600 mb-4">{lab.description}</p>
                 
-                <div className="text-sm text-gray-500 mb-4">
-                  <p><strong>Location:</strong> {lab.location}</p>
+                <div className="text-sm text-gray-600 mb-4 flex items-start">
+                  <MapPin className="mr-2 text-indigo-500 flex-shrink-0" size={18} />
+                  <p>{lab.location}</p>
                 </div>
                 
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Facilities:</h4>
+                  <h4 className="text-sm font-medium text-indigo-700 mb-2">Facilities:</h4>
                   <div className="flex flex-wrap gap-2">
                     {lab.facilities.map((facility, index) => (
                       <span 
                         key={index} 
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 border border-indigo-200"
                       >
                         {facility}
                       </span>
@@ -338,13 +402,10 @@ const LabBooking = () => {
               {/* View Time Slots Button */}
               <div className="px-6 pb-6">
                 <button 
-                  onClick={() => {
-                    setSelectedLab(lab);
-                    setIsModalOpen(true);
-                  }}
-                  className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
+                  onClick={() => openBookingModal(lab)}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium shadow-md flex items-center justify-center"
                 >
-                  View Available Time Slots
+                  <Calendar className="mr-2" size={18} /> View Available Time Slots
                 </button>
               </div>
             </motion.div>
@@ -352,24 +413,27 @@ const LabBooking = () => {
         </div>
         
         {filteredLabs.length === 0 && (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-              <XCircle className="h-8 w-8 text-gray-400" />
+          <div className="text-center py-16 bg-white rounded-xl shadow-md max-w-lg mx-auto">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-100 mb-6">
+              <XCircle className="h-10 w-10 text-indigo-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No labs found</h3>
-            <p className="text-gray-500">
-              Try adjusting your filters or search query to find labs.
+            <h3 className="text-xl font-bold text-indigo-800 mb-3">No labs found</h3>
+            <p className="text-gray-600 max-w-sm mx-auto">
+              Try adjusting your filters or search query to find available labs.
             </p>
           </div>
         )}
         
         {/* User Bookings Section */}
         {userBookings.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Bookings</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-l-4 border-green-500">
+            <h2 className="text-xl font-bold text-green-700 mb-4 flex items-center">
+              <CheckCircle className="mr-2" size={20} />
+              Your Bookings
+            </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-green-50 to-teal-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lab</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -417,29 +481,15 @@ const LabBooking = () => {
         )}
         
         {/* Lab Booking Modal */}
-        <LabBookingModal
-          lab={selectedLab}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={(bookingData) => {
-            // Create a new booking with the submitted data
-            const newBooking = {
-              id: `booking-${Date.now()}`,
-              ...bookingData,
-              user: {
-                id: 'user-123',
-                name: 'Current User',
-                email: 'user@example.com'
-              },
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            
-            // Add the new booking to the user's bookings
-            setUserBookings(prevBookings => [...prevBookings, newBooking]);
-          }}
-        />
+        {selectedLab && (
+          <LabBookingModal
+            lab={selectedLab}
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSubmit={handleBookingSubmit}
+          />
+        )}
+      </div>
       </div>
       <Footer />
     </>

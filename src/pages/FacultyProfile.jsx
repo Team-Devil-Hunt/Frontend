@@ -546,35 +546,73 @@ const FacultyProfile = () => {
           const processedFaculty = {
             ...facultyData,
             // Ensure expertise is properly handled (could be string JSON or array)
-            expertise: Array.isArray(facultyData.expertise) ? facultyData.expertise : 
-                      (typeof facultyData.expertise === 'string' ? 
-                        (facultyData.expertise.startsWith('[') ? JSON.parse(facultyData.expertise) : [facultyData.expertise]) : []),
+            expertise: (() => {
+              let expertiseArray = [];
+              try {
+                if (Array.isArray(facultyData.expertise)) {
+                  expertiseArray = facultyData.expertise;
+                } else if (typeof facultyData.expertise === 'string') {
+                  if (facultyData.expertise.startsWith('[') && facultyData.expertise.endsWith(']')) {
+                    expertiseArray = JSON.parse(facultyData.expertise);
+                  } else {
+                    expertiseArray = [facultyData.expertise];
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing expertise:', e);
+                expertiseArray = facultyData.expertise ? [String(facultyData.expertise)] : [];
+              }
+              
+              // Ensure all expertise items are strings
+              return expertiseArray.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item));
+            })(),
             // Map backend field names to frontend field names if needed
             shortBio: facultyData.short_bio || facultyData.shortBio || '',
-            researchInterests: facultyData.research_interests || facultyData.researchInterests || [],
+            researchInterests: (() => {
+              const interests = facultyData.research_interests || facultyData.researchInterests || [];
+              if (Array.isArray(interests)) {
+                return interests.map(interest => typeof interest === 'object' ? JSON.stringify(interest) : String(interest));
+              }
+              return [];
+            })(),
             isChairman: facultyData.is_chairman || facultyData.isChairman || false,
             // Process phone number - ensure it's displayed (use contact from API response)
             phone: facultyData.phone || facultyData.contact || '',
             // Process recent publications - create mock data if empty
-            recentPublications: facultyData.recent_publications?.length ? facultyData.recent_publications : 
-                               facultyData.recentPublications?.length ? facultyData.recentPublications : [
-                                 {
-                                   title: `Machine Learning Applications in ${facultyData.expertise?.[0] || 'Computer Science'}`,
-                                   journal: 'Journal of Computer Science',
-                                   year: new Date().getFullYear() - 1,
-                                   doi: '10.1000/xyz123'
-                                 },
-                                 {
-                                   title: `Recent Advances in ${facultyData.expertise?.[1] || 'Software Engineering'}`,
-                                   journal: 'IEEE Transactions',
-                                   year: new Date().getFullYear() - 2,
-                                   doi: '10.1000/abc456'
-                                 }
-                               ],
-            // Provide defaults for missing fields
-            education: facultyData.education || [],
-            courses: facultyData.courses || [],
-            awards: facultyData.awards || [],
+            recentPublications: (() => {
+              // Check if we have publications from the API
+              if (facultyData.recent_publications?.length) {
+                return facultyData.recent_publications;
+              } else if (facultyData.recentPublications?.length) {
+                return facultyData.recentPublications;
+              } else {
+                // Create mock publications with proper structure
+                return [
+                  {
+                    title: `Machine Learning Applications in ${facultyData.expertise?.[0] || 'Computer Science'}`,
+                    journal: 'Journal of Computer Science',
+                    year: new Date().getFullYear() - 1,
+                    doi: '10.1000/xyz123'
+                  },
+                  {
+                    title: `Recent Advances in ${facultyData.expertise?.[1] || 'Software Engineering'}`,
+                    journal: 'IEEE Transactions',
+                    year: new Date().getFullYear() - 2,
+                    doi: '10.1000/abc456'
+                  }
+                ];
+              }
+            })(),
+            // Provide defaults for missing fields and ensure arrays contain only strings
+            education: Array.isArray(facultyData.education) ? 
+              facultyData.education.map(edu => typeof edu === 'object' ? JSON.stringify(edu) : String(edu)) : 
+              [],
+            courses: Array.isArray(facultyData.courses) ? 
+              facultyData.courses.map(course => typeof course === 'object' ? JSON.stringify(course) : String(course)) : 
+              [],
+            awards: Array.isArray(facultyData.awards) ? 
+              facultyData.awards.map(award => typeof award === 'object' ? JSON.stringify(award) : String(award)) : 
+              [],
             publications: facultyData.publications || 0,
             experience: facultyData.experience || 0,
             rating: facultyData.rating || 4.5,
@@ -632,7 +670,7 @@ const FacultyProfile = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Faculty</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <Button asChild>
-            <Link to="/faculty">
+            <Link to="/faculty-members">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Faculty Directory
             </Link>
@@ -649,7 +687,7 @@ const FacultyProfile = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Faculty Not Found</h2>
           <p className="text-gray-600 mb-6">The requested faculty profile could not be found.</p>
           <Button asChild>
-            <Link to="/faculty">
+            <Link to="/faculty-members">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Faculty Directory
             </Link>
@@ -660,8 +698,10 @@ const FacultyProfile = () => {
   }
 
   const renderStars = (rating) => {
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
+    // Ensure rating is a number
+    const numericRating = typeof rating === 'number' ? rating : 4.5;
+    const fullStars = Math.floor(numericRating);
+    const hasHalfStar = (numericRating % 1) >= 0.5;
     
     return (
       <div className="flex items-center gap-1">
@@ -680,7 +720,7 @@ const FacultyProfile = () => {
             return <Star key={index} className="w-4 h-4 text-yellow-400/40" />
           }
         })}
-        <span className="ml-2 text-sm text-gray-600">({rating.toFixed(1)})</span>
+        <span className="ml-2 text-sm text-gray-600">({numericRating.toFixed(1)})</span>
       </div>
     )
   }
@@ -691,7 +731,7 @@ const FacultyProfile = () => {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-8">
         <div className="container mx-auto px-4">
           <Button asChild variant="ghost" className="text-white hover:bg-white/10 mb-4">
-            <Link to="/faculty">
+            <Link to="/faculty-members">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Faculty Directory
             </Link>
@@ -819,22 +859,38 @@ const FacultyProfile = () => {
                 <CardContent>
                   {(faculty.recentPublications?.length > 0 || faculty.recent_publications?.length > 0) ? (
                     <ul className="space-y-4">
-                      {(faculty.recent_publications || faculty.recentPublications || []).map((pub, index) => (
-                        <li key={index} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                          <h4 className="font-medium text-gray-900">{pub.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{pub.journal}, {pub.year}</p>
-                          {pub.doi && (
-                            <a 
-                              href={`https://doi.org/${pub.doi}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:underline mt-1 inline-block"
-                            >
-                              DOI: {pub.doi}
-                            </a>
-                          )}
-                        </li>
-                      ))}
+                      {(faculty.recent_publications || faculty.recentPublications || []).map((pub, index) => {
+                        // Handle case where pub might be an object or a string
+                        if (typeof pub === 'object' && pub !== null) {
+                          return (
+                            <li key={index} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                              <h4 className="font-medium text-gray-900">{pub.title || 'Untitled Publication'}</h4>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {pub.journal || pub.organization || ''}
+                                {(pub.journal || pub.organization) && pub.year ? ', ' : ''}
+                                {pub.year || ''}
+                              </p>
+                              {pub.doi && (
+                                <a 
+                                  href={`https://doi.org/${pub.doi}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:underline mt-1 inline-block"
+                                >
+                                  DOI: {pub.doi}
+                                </a>
+                              )}
+                            </li>
+                          );
+                        } else {
+                          // Handle case where pub is a string
+                          return (
+                            <li key={index} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                              <p className="text-sm text-gray-600">{String(pub)}</p>
+                            </li>
+                          );
+                        }
+                      })}
                     </ul>
                   ) : (
                     <p className="text-gray-500 italic">No recent publications available.</p>
@@ -859,12 +915,48 @@ const FacultyProfile = () => {
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
-                      {faculty.awards.map((award, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Award className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-700">{award}</span>
-                        </li>
-                      ))}
+                      {faculty.awards.map((award, index) => {
+                        // Try to parse the award if it's a JSON string
+                        let awardData = award;
+                        try {
+                          if (typeof award === 'string' && (award.startsWith('{') || award.startsWith('[')))
+                            awardData = JSON.parse(award);
+                        } catch (e) {
+                          console.log('Could not parse award JSON:', e);
+                        }
+                        
+                        if (typeof awardData === 'object' && awardData !== null) {
+                          // Handle structured award data
+                          return (
+                            <li key={index} className="flex items-start gap-2">
+                              <Award className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-gray-800">
+                                  {awardData.title || 'Award'}
+                                </p>
+                                {awardData.organization && (
+                                  <p className="text-sm text-gray-600">
+                                    {awardData.organization}
+                                  </p>
+                                )}
+                                {awardData.year && (
+                                  <p className="text-xs text-gray-500">
+                                    {awardData.year}
+                                  </p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        } else {
+                          // Handle string award
+                          return (
+                            <li key={index} className="flex items-start gap-2">
+                              <Award className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-gray-700">{String(award)}</span>
+                            </li>
+                          );
+                        }
+                      })}
                     </ul>
                   </CardContent>
                 </Card>
@@ -893,7 +985,7 @@ const FacultyProfile = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-4 h-4 text-blue-600" />
-                    <span>{faculty.phone || faculty.contact || '+880-2-9661900-73 (Ext. available upon request)'}</span>
+                    <span>{faculty.phone || faculty.contact || '+880-2-9661900-73'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin className="w-4 h-4 text-blue-600" />
@@ -962,11 +1054,44 @@ const FacultyProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3">
-                    {faculty.education.map((edu, index) => (
-                      <li key={index} className="text-sm text-gray-700">
-                        {edu}
-                      </li>
-                    ))}
+                    {faculty.education.map((edu, index) => {
+                      // Try to parse the education if it's a JSON string
+                      let eduData = edu;
+                      try {
+                        if (typeof edu === 'string' && (edu.startsWith('{') || edu.startsWith('[')))
+                          eduData = JSON.parse(edu);
+                      } catch (e) {
+                        console.log('Could not parse education JSON:', e);
+                      }
+                      
+                      if (typeof eduData === 'object' && eduData !== null) {
+                        // Handle structured education data
+                        return (
+                          <li key={index} className="border-l-2 border-blue-500 pl-3 py-1">
+                            <p className="font-medium text-gray-800">
+                              {eduData.degree || 'Degree'}
+                            </p>
+                            {eduData.institution && (
+                              <p className="text-sm text-gray-600">
+                                {eduData.institution}
+                              </p>
+                            )}
+                            {eduData.year && (
+                              <p className="text-xs text-gray-500">
+                                {eduData.year}
+                              </p>
+                            )}
+                          </li>
+                        );
+                      } else {
+                        // Handle string education
+                        return (
+                          <li key={index} className="border-l-2 border-blue-500 pl-3 py-1">
+                            <span className="text-sm text-gray-700">{String(edu)}</span>
+                          </li>
+                        );
+                      }
+                    })}
                   </ul>
                 </CardContent>
               </Card>

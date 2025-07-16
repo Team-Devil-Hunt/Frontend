@@ -120,7 +120,7 @@ const Programs = () => {
                            course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            course.code.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesSpecialization = selectedSpecialization === '' || 
-                                   course.specialization.includes(selectedSpecialization)
+                                   course.specialization.toLowerCase().includes(selectedSpecialization.toLowerCase())
       const matchesDifficulty = selectedDifficulty === '' || course.difficulty === selectedDifficulty
       const matchesYear = selectedYear === '' || course.year.toString() === selectedYear
       

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, CreditCard, Calendar, Download, ExternalLink, Filter, ArrowUpDown, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import { getStudentFees } from '../../constant/StudentFeesApi';
+import { getStudentFees, payFee } from '../../constant/StudentFeesApi';
+import { toast } from 'react-hot-toast';
+import { useGlobalState } from '../../context/GlobalStateProvider';
 
 // Mock API data for fees
 // Schema:
@@ -145,6 +147,11 @@ const StudentFees = () => {
     fees: [],
     transactions: []
   });
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [selectedFee, setSelectedFee] = useState(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ONLINE_BANKING');
+  const { globalState } = useGlobalState();
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -226,55 +233,127 @@ const StudentFees = () => {
     ) || [];
   }, [searchQuery, feeData.transactions]);
   
-  return (
-    <div className="p-4 md:p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Fees & Payments</h1>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search fees or transactions..."
-            className="pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-        </div>
-      </div>
+  // Payment modal functions
+  const handleOpenPaymentModal = (fee) => {
+    setSelectedFee(fee);
+    setPaymentModalOpen(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    setPaymentModalOpen(false);
+    setSelectedFee(null);
+  };
+
+  const handlePaymentMethodChange = (e) => {
+    setSelectedPaymentMethod(e.target.value);
+  };
+
+  // Handle fee payment
+  const handlePayFee = async () => {
+    if (!selectedFee || !globalState.user) return;
+    
+    setProcessingPayment(true);
+    
+    try {
+      // Prepare transaction data
+      const transactionData = {
+        amount: selectedFee.amount,
+        description: `Payment for ${selectedFee.name} - ${feeData.currentSemester}`,
+        payment_method: selectedPaymentMethod,
+        fee_id: selectedFee.id,
+        student_id: globalState.user.id,
+        // Generate a random transaction ID for demo purposes
+        transaction_id: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      };
       
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-6">
-        <button
-          className={`px-4 py-2 font-medium text-sm ${
-            activeTab === 'current'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('current')}
-        >
-          Current Fees
-        </button>
-        <button
-          className={`px-4 py-2 font-medium text-sm ${
-            activeTab === 'history'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('history')}
-        >
-          Transaction History
-        </button>
-        <button
-          className={`px-4 py-2 font-medium text-sm ${
-            activeTab === 'structure'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('structure')}
-        >
-          Fee Structure
-        </button>
-      </div>
+      // Call the API to pay the fee
+      const response = await payFee(transactionData);
+      
+      // Update the fee status in the local state
+      const updatedFees = feeData.fees.map(fee => {
+        if (fee.id === selectedFee.id) {
+          return {
+            ...fee,
+            status: 'PAID',
+            paid_date: new Date().toISOString(),
+            paid_amount: selectedFee.amount,
+            transactions: [response]
+          };
+        }
+        return fee;
+      });
+      
+      // Update the fees list
+      setFeeData({
+        ...feeData,
+        fees: updatedFees,
+        transactions: [...feeData.transactions, response]
+      });
+      
+      // Show success message
+      toast.success('Payment successful!');
+      
+      // Close the payment modal
+      handleClosePaymentModal();
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+  
+  // Render the main content
+  const renderContent = () => {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Fees & Payments</h1>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search fees or transactions..."
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          </div>
+        </div>
+        
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === 'current'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('current')}
+          >
+            Current Fees
+          </button>
+          <button
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === 'history'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('history')}
+          >
+            Transaction History
+          </button>
+          <button
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === 'structure'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('structure')}
+          >
+            Fee Structure
+          </button>
+        </div>
       
       {/* Tab Content */}
       {activeTab === 'current' && (
@@ -358,8 +437,12 @@ const StudentFees = () => {
                       </div>
                       
                       {fee.status !== 'PAID' ? (
-                        <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors">
-                          Pay Now
+                        <button 
+                          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
+                          onClick={() => handleOpenPaymentModal(fee)}
+                          disabled={processingPayment}
+                        >
+                          {processingPayment && selectedFee?.id === fee.id ? 'Processing...' : 'Pay Now'}
                         </button>
                       ) : (
                         <button className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors flex items-center">
@@ -707,6 +790,64 @@ const StudentFees = () => {
         </div>
       )}
     </div>
+  );
+};
+
+  return (
+    <>
+      {/* Main content */}
+      {renderContent()}
+      
+      {/* Payment Modal */}
+      {paymentModalOpen && selectedFee && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div 
+            className="bg-white rounded-lg p-6 w-full max-w-md"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h3 className="text-xl font-bold mb-4">Pay Fee</h3>
+            
+            <div className="mb-4">
+              <p className="font-medium">{selectedFee.name}</p>
+              <p className="text-gray-600">{selectedFee.description}</p>
+              <p className="text-lg font-bold mt-2">Amount: ৳{selectedFee.amount.toLocaleString()}</p>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+              <select 
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                value={selectedPaymentMethod}
+                onChange={handlePaymentMethodChange}
+              >
+                <option value="ONLINE_BANKING">Online Banking</option>
+                <option value="MOBILE_BANKING">Mobile Banking</option>
+                <option value="CARD">Credit/Debit Card</option>
+              </select>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button 
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                onClick={handleClosePaymentModal}
+                disabled={processingPayment}
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-400"
+                onClick={handlePayFee}
+                disabled={processingPayment}
+              >
+                {processingPayment ? 'Processing...' : 'Confirm Payment'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
   );
 };
 

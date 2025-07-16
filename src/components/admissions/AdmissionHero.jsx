@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { CalendarDays, FileText, Clock, Users } from 'lucide-react'
 
-const AdmissionHero = ({ stats }) => {
+const AdmissionHero = ({ stats, onApplyNowClick }) => {
   return (
     <section className="relative bg-gradient-to-r from-blue-900 to-indigo-800 text-white py-16 md:py-24 overflow-hidden">
       {/* Background pattern */}
@@ -38,7 +38,11 @@ const AdmissionHero = ({ stats }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50">
+            <Button 
+              size="lg" 
+              className="bg-white text-blue-900 hover:bg-blue-50"
+              onClick={onApplyNowClick}
+            >
               Apply Now
             </Button>
             <Button size="lg" className="border-white text-white hover:bg-white/10">

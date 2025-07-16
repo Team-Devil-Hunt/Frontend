@@ -316,13 +316,25 @@ const Events = () => {
   }
 
   // Handle registration submission
-  const handleRegistrationSubmit = async (registrationData) => {
+  const handleRegistrationSubmit = async (data) => {
     try {
       if (!selectedEvent) return;
       
+      // Extract the registration data from the nested structure
+      // The backend expects direct fields, not nested under registrationData
+      const { registrationData } = data;
+      
       const response = await axios.post(
         `${BaseUrl}/api/events/${selectedEvent.id}/register`,
-        registrationData
+        {
+          fullName: registrationData.fullName,
+          email: registrationData.email,
+          phone: registrationData.phone,
+          studentId: registrationData.studentId,
+          department: registrationData.department,
+          year: registrationData.year,
+          specialRequirements: registrationData.specialRequirements
+        }
       );
       
       console.log('Registration submitted:', response.data);
@@ -337,7 +349,7 @@ const Events = () => {
     } catch (error) {
       console.error('Error submitting registration:', error);
       // You could add error handling here
-      alert('Registration failed. Please try again later.');
+      alert('Registration failed. Please try again.');
     }
   }
 

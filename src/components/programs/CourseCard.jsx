@@ -44,7 +44,7 @@ const CourseCard = ({ course }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className={`h-full transition-all duration-300 overflow-hidden border-t-4 ${colors.borderColor} ${colors.hoverShadow} hover:shadow-md`}>
+      <Card className={`h-full transition-all duration-300 overflow-hidden border-t-4 ${colors.borderColor} ${colors.hoverShadow} hover:shadow-md flex flex-col`}>
         <div className={`${colors.headerBg} text-white p-4`}>
           <div className="flex justify-between items-start mb-2">
             <Badge variant="outline" className="bg-white/20 text-white border-white/30">
@@ -59,10 +59,12 @@ const CourseCard = ({ course }) => {
           <p className="text-xs text-white/80">{semesterDisplay}</p>
         </div>
         
-        <CardContent className="p-4">
-          <p className="text-sm text-gray-700 line-clamp-2 mb-3">
-            {course.description}
-          </p>
+        <CardContent className="p-4 flex flex-col flex-grow">
+          <div className="min-h-[50px] mb-3">
+            <p className="text-sm text-gray-700 line-clamp-2">
+              {course.description}
+            </p>
+          </div>
           
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="flex flex-col items-center p-2 bg-gray-50/70 rounded-lg border border-gray-100 hover:shadow-sm hover:bg-white/80 transition-all">
@@ -94,18 +96,22 @@ const CourseCard = ({ course }) => {
             </Badge>
           </div>
           
-          {course.prerequisites && course.prerequisites.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <span className="text-xs font-medium text-gray-700 block mb-1">Prerequisites:</span>
-              <div className="flex flex-wrap gap-1">
-                {course.prerequisites.map((prereq, index) => (
-                  <Badge key={index} variant="outline" className="text-xs bg-white/80 hover:bg-gray-100/80 border-gray-200">
-                    {prereq}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="mt-3 pt-3 border-t border-gray-100 min-h-[40px]">
+            {course.prerequisites && course.prerequisites.length > 0 ? (
+              <>
+                <span className="text-xs font-medium text-gray-700 block mb-1">Prerequisites:</span>
+                <div className="flex flex-wrap gap-1">
+                  {course.prerequisites.map((prereq, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {prereq}
+                    </Badge>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-gray-500">No prerequisites required</span>
+            )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>

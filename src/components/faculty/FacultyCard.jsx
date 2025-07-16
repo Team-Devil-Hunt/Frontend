@@ -29,7 +29,7 @@ const FacultyCard = ({ faculty, variants }) => {
 
   return (
     <motion.div variants={variants}>
-      <Link to={`/faculty/${facultySlug}`}>
+      <Link to={`/faculty-member/${facultySlug}`}>
         <Card className="w-full max-w-sm mx-auto bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-xl transition-all duration-300 group cursor-pointer">
           <CardContent className="p-6 text-center">
             {/* Profile Image */}

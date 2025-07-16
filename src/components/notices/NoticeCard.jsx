@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -61,40 +62,42 @@ const NoticeCard = ({ notice, index }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="transform-gpu"
     >
-      <Card className={`border-l-4 ${getBorderColor(notice.priority)} hover:shadow-md transition-shadow`}>
-        <CardContent className="p-6">
+      <Card className={`border-l-4 ${getBorderColor(notice.priority)} hover:shadow-xl transition-all bg-white/90 backdrop-blur-sm rounded-xl overflow-hidden`}>
+        <CardContent className="p-6 bg-gradient-to-br from-white to-blue-50/30">
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-bold text-lg">{notice.title}</h3>
+                  <h3 className="font-bold text-lg text-indigo-900">{notice.title}</h3>
                   {isNew() && (
-                    <Badge className="bg-red-500">New</Badge>
+                    <Badge className="bg-gradient-to-r from-pink-500 to-red-500 text-white font-medium animate-pulse">New</Badge>
                   )}
                 </div>
                 
                 <div className="flex flex-wrap gap-3 mb-3">
-                  <Badge className={getBadgeColor(notice.category)}>
+                  <Badge className={`${getBadgeColor(notice.category)} shadow-sm font-medium`}>
                     {notice.category.charAt(0).toUpperCase() + notice.category.slice(1)}
                   </Badge>
                   
                   {notice.department && (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="border-indigo-200 text-indigo-700 bg-indigo-50/50">
                       {notice.department}
                     </Badge>
                   )}
                 </div>
                 
-                <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
+                <div className="flex flex-wrap gap-4 text-sm text-indigo-700">
+                  <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
+                    <Calendar className="w-4 h-4 text-blue-500" />
                     <span>Published: {formatDate(notice.publishedDate)}</span>
                   </div>
                   
                   {notice.expiryDate && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
+                    <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-full">
+                      <Clock className="w-4 h-4 text-amber-500" />
                       <span>Expires: {formatDate(notice.expiryDate)}</span>
                     </div>
                   )}
@@ -105,18 +108,20 @@ const NoticeCard = ({ notice, index }) => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex items-center gap-1"
-                  onClick={() => window.open(`/notices/${notice.id}`, '_blank')}
+                  className="flex items-center gap-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-colors"
+                  asChild
                 >
-                  <Eye className="w-4 h-4" />
-                  <span>View</span>
+                  <Link to={`/notices/${notice.id}`}>
+                    <Eye className="w-4 h-4" />
+                    <span>View</span>
+                  </Link>
                 </Button>
                 
                 {notice.attachments && notice.attachments.length > 0 && (
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800 transition-colors"
                     onClick={() => window.open(notice.attachments[0].url, '_blank')}
                   >
                     <Download className="w-4 h-4" />
@@ -128,7 +133,7 @@ const NoticeCard = ({ notice, index }) => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:text-purple-800 transition-colors"
                     onClick={() => window.open(notice.externalLink, '_blank')}
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -138,12 +143,12 @@ const NoticeCard = ({ notice, index }) => {
               </div>
             </div>
             
-            <div className="text-gray-700">
+            <div className="text-gray-700 my-4 bg-white/50 p-4 rounded-lg border-l-2 border-indigo-200">
               <p>{notice.summary}</p>
             </div>
             
             {notice.attachments && notice.attachments.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full w-fit">
                 <FileText className="w-4 h-4" />
                 <span>{notice.attachments.length} {notice.attachments.length === 1 ? 'attachment' : 'attachments'}</span>
               </div>

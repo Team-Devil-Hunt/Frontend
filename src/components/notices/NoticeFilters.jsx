@@ -54,20 +54,20 @@ const NoticeFilters = ({
 
   return (
     <motion.div 
-      className="bg-white rounded-lg shadow-md p-6 mb-8"
+      className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8 border border-indigo-100"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h2 className="text-xl font-bold">Filter Notices</h2>
+        <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Filter Notices</h2>
         
         {activeFiltersCount > 0 && (
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
             onClick={clearFilters}
-            className="flex items-center gap-2 text-gray-500 hover:text-gray-700"
+            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all"
           >
             <X className="w-4 h-4" />
             Clear filters ({activeFiltersCount})
@@ -77,28 +77,28 @@ const NoticeFilters = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-indigo-500 w-5 h-5" />
           <Input
             type="text"
             placeholder="Search notices..."
-            className="pl-10"
+            className="pl-10 border-indigo-200 focus:border-indigo-400 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-lg shadow-sm"
             value={filters.search}
             onChange={handleSearchChange}
           />
         </div>
         
         <div className="flex items-center gap-2">
-          <Clock className="text-gray-500 w-5 h-5" />
-          <span className="text-sm font-medium text-gray-700">Timeframe:</span>
+          <Clock className="text-indigo-500 w-5 h-5" />
+          <span className="text-sm font-medium text-indigo-700">Timeframe:</span>
           
           <Tabs 
             value={filters.timeframe} 
             onValueChange={(value) => setFilters(prev => ({ ...prev, timeframe: value }))}
             className="w-full max-w-xs"
           >
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="current">Current</TabsTrigger>
-              <TabsTrigger value="archive">Archive</TabsTrigger>
+            <TabsList className="grid grid-cols-2 bg-indigo-100/50">
+              <TabsTrigger value="current" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white">Current</TabsTrigger>
+              <TabsTrigger value="archive" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white">Archive</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

@@ -16,9 +16,10 @@ export default defineConfig({
     // Completely disable WebSocket and HMR
     hmr: false,
     ws: false,
-    allowedHosts: true,
-    // This will allow any host to access the dev server
-    // For security in production, you would want to be more restrictive
+    // Allow any host to access the dev server
     cors: true,
+    strictPort: true,
+    // Explicitly set allowed hosts to all (including ngrok tunnels)
+    allowedHosts: true,
   },
 })

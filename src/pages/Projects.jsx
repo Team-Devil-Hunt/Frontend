@@ -42,6 +42,7 @@ import { BaseUrl } from '@/services/BaseUrl';
 const Projects = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     years: [],
     categories: [],
@@ -252,7 +253,10 @@ const Projects = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <ProjectCard project={project} onClick={() => setSelectedProject(project)} />
+              <ProjectCard project={project} onClick={() => {
+                setSelectedProject(project);
+                setIsModalOpen(true);
+              }} />
             </motion.div>
           ))}
         </motion.div>
@@ -260,7 +264,14 @@ const Projects = () => {
 
       {/* Project Details Modal */}
       {selectedProject && (
-        <ProjectDetails project={selectedProject} onClose={() => setSelectedProject(null)} />
+        <ProjectDetails 
+          project={selectedProject} 
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setTimeout(() => setSelectedProject(null), 300); // Clear selected project after animation completes
+          }} 
+        />
       )}
     </div>
   )

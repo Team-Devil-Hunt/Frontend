@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronDown, ChevronUp, Search } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Badge } from '../ui/badge'
+import { Input } from '../ui/input'
 
 const FAQItem = ({ question, answer, category, isOpen, onClick }) => {
   return (

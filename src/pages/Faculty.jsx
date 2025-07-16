@@ -45,7 +45,7 @@ import ashrafulAlamImg from '../assets/teacher/ashraful_alam.jpeg'
 import farhanAhmedImg from '../assets/teacher/farhan_ahmed.jpg'
 import hasanBabuImg from '../assets/teacher/hasan_babu.jpg'
 import ismatRahmanImg from '../assets/teacher/ismat_rahman.jpeg'
-import mosaddekHossainImg from '../assets/teacher/mosaddek_hossain_kamal.jpeg'
+import mosaddekKamalImg from '../assets/teacher/mosaddek_hossain_kamal.jpeg'
 import shabbirAhmedImg from '../assets/teacher/shabbir_ahmed.jpg'
 import suraiyaParvinImg from '../assets/teacher/suraiya_parvin.jpg'
 
@@ -63,7 +63,6 @@ const mockFacultyData = {
       email: 'palash.roy@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7456',
       office: 'Room 301, CSE Building',
-      image: '/src/assets/teacher/Palash_Roy.jpg',
       website: 'https://example.com/palash-roy',
       publications: 85,
       experience: 15,
@@ -169,7 +168,7 @@ const mockFacultyData = {
       email: 'mosaddek.kamal@cse.du.ac.bd',
       phone: '+880-2-9661900-73 Ext: 7461',
       office: 'Room 206, CSE Building',
-      image: mosaddekHossainImg,
+      image: mosaddekKamalImg,
       publications: 78,
       experience: 18,
       rating: 4.8,
@@ -278,12 +277,40 @@ const Faculty = () => {
                              (f.expertise ? [f.expertise.toString()] : []);
             }
             
+            // Map faculty images based on ID
+            const facultyImages = {
+              '200': shabbirAhmedImg,
+              '201': farhanAhmedImg,
+              '202': hasanBabuImg,
+              '203': ismatRahmanImg,
+              '204': palashRoyImg,
+              '205': suraiyaParvinImg,
+              '206': ashrafulAlamImg,
+              '207': hasanBabuImg,
+              '208': mosaddekKamalImg,
+              '209': shabbirAhmedImg
+            };
+            
+            // Map faculty designations based on ID
+            const facultyDesignations = {
+              '200': 'Professor',
+              '201': 'Associate Professor',
+              '202': 'Professor',
+              '203': 'Professor',
+              '204': 'Associate Professor',
+              '205': 'Assistant Professor',
+              '206': 'Lecturer',
+              '207': 'Assistant Professor',
+              '208': 'Professor',
+              '209': 'Associate Professor'
+            };
+            
             // Map the actual API response fields to what our components expect
             return {
               ...f,
               // Use proper field names and provide defaults
-              designation: f.designation || 'Faculty',
-              role: f.role || f.designation || 'Faculty',
+              designation: facultyDesignations[f.id] || f.designation || 'Faculty',
+              role: facultyDesignations[f.id] || f.role || f.designation || 'Faculty',
               expertise: expertiseArray,
               shortBio: f.shortBio || '',
               phone: f.contact || '',
@@ -296,7 +323,7 @@ const Faculty = () => {
               // Add the slug for routing
               slug: slug,
               // Add image path if not present
-              image: f.image || `/src/assets/teacher/${f.name.split(' ').pop().toLowerCase()}.jpg`
+              image: facultyImages[f.id] || shabbirAhmedImg
             };
           });
           

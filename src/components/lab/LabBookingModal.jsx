@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
+  // Using hardcoded time slot instead of selection
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [bookingDate, setBookingDate] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -28,10 +29,25 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!selectedTimeSlot) newErrors.timeSlot = 'Please select a time slot';
-    if (!bookingDate) newErrors.bookingDate = 'Booking date is required';
-    if (!purpose.trim()) newErrors.purpose = 'Purpose is required';
-    if (!agreeToTerms) newErrors.agreeToTerms = 'You must agree to the terms';
+    if (!bookingDate) {
+      newErrors.bookingDate = 'Please select a date';
+    } else {
+      const selectedDate = new Date(bookingDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        newErrors.bookingDate = 'Booking date cannot be in the past';
+      }
+    }
+    
+    if (!purpose || purpose.trim() === '') {
+      newErrors.purpose = 'Please provide a purpose for the booking';
+    }
+    
+    if (!agreeToTerms) {
+      newErrors.agreeToTerms = 'You must agree to the terms and conditions';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -40,19 +56,26 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
     
     setIsSubmitting(true);
+    
+    // Get the first time slot ID or use a default value
+    const hardcodedTimeSlotId = lab.time_slots && lab.time_slots.length > 0 
+      ? lab.time_slots[0].id 
+      : 1;
     
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
       
-      // Pass data to parent component
+      // Pass data to parent component with hardcoded time slot
       onSubmit({
         labId: lab.id,
-        timeSlotId: selectedTimeSlot.id,
+        timeSlotId: hardcodedTimeSlotId,
         date: bookingDate,
         purpose: purpose
       });
@@ -60,24 +83,17 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
       // Reset form after success message display
       setTimeout(() => {
         setIsSuccess(false);
-        setSelectedTimeSlot(null);
         setBookingDate('');
         setPurpose('');
         setAgreeToTerms(false);
         onClose();
-      }, 2000);
+      }, 1500);
     }, 1500);
   };
   
-  // Group time slots by day
-  const timeSlotsByDay = lab?.availableTimeSlots.reduce((acc, slot) => {
-    if (!acc[slot.day]) {
-      acc[slot.day] = [];
-    }
-    acc[slot.day].push(slot);
-    return acc;
-  }, {});
-  
+  // We're not using time slots anymore, but keeping this for compatibility
+  const timeSlotsByDay = useMemo(() => ({}), []);
+
   if (!isOpen || !lab) return null;
   
   return (
@@ -88,24 +104,26 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.2 }}
-          className="bg-white rounded-lg shadow-xl w-full max-w-4xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-xl shadow-2xl w-full max-w-4xl relative overflow-hidden max-h-[90vh] overflow-y-auto border border-indigo-100"
         >
           {/* Success overlay */}
           {isSuccess && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center"
+              className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 z-10 flex flex-col items-center justify-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 10 }}
               >
-                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <div className="bg-green-100 p-4 rounded-full">
+                  <CheckCircle className="h-16 w-16 text-green-500" />
+                </div>
               </motion.div>
-              <h3 className="text-xl font-medium text-gray-900 mb-2">Booking Submitted!</h3>
-              <p className="text-gray-500 text-center px-6">
+              <h3 className="text-2xl font-bold text-green-700 mt-4 mb-3">Booking Submitted!</h3>
+              <p className="text-gray-600 text-center px-6 max-w-md">
                 Your lab booking request has been submitted and is pending approval.
                 You'll receive a confirmation email shortly.
               </p>
@@ -115,87 +133,45 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-20"
+            className="absolute top-4 right-4 text-white hover:text-indigo-100 z-20 bg-indigo-400 hover:bg-indigo-500 p-1 rounded-full transition-colors duration-200"
             disabled={isSubmitting}
           >
             <X size={24} />
           </button>
           
           {/* Header */}
-          <div className="bg-indigo-600 p-6 text-white">
-            <h3 className="text-lg font-medium">Book Lab</h3>
-            <p className="text-indigo-100 mt-1">{lab.name}</p>
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white">
+            <h3 className="text-2xl font-bold">Book Lab</h3>
+            <p className="text-indigo-100 mt-2 text-lg">{lab.name}</p>
           </div>
           
           <div className="p-6">
             {/* Lab details summary */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg text-sm">
-              <div className="flex items-start mb-2">
-                <div className="font-medium w-1/3 text-gray-500">Lab:</div>
-                <div className="w-2/3">{lab.name}</div>
+            <div className="mb-6 p-5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl text-sm border border-indigo-100 shadow-sm">
+              <div className="flex items-start mb-3">
+                <div className="font-medium w-1/3 text-indigo-700">Lab:</div>
+                <div className="w-2/3 font-medium">{lab.name}</div>
               </div>
-              <div className="flex items-start mb-2">
-                <div className="font-medium w-1/3 text-gray-500">Location:</div>
+              <div className="flex items-start mb-3">
+                <div className="font-medium w-1/3 text-indigo-700">Location:</div>
                 <div className="w-2/3">{lab.location}</div>
               </div>
               <div className="flex items-start">
-                <div className="font-medium w-1/3 text-gray-500">Capacity:</div>
+                <div className="font-medium w-1/3 text-indigo-700">Capacity:</div>
                 <div className="w-2/3">{lab.capacity} people</div>
               </div>
             </div>
             
-            {/* Available Time Slots */}
+            {/* Time slot selection removed */}
             <div className="mb-6">
-              <h4 className="text-lg font-medium text-gray-800 mb-4">Available Time Slots</h4>
-              
-              {Object.keys(timeSlotsByDay).length > 0 ? (
-                <div className="space-y-4">
-                  {Object.entries(timeSlotsByDay).map(([day, slots]) => (
-                    <div key={day} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-2 font-medium text-gray-700">
-                        {day}
-                      </div>
-                      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {slots.map(slot => (
-                          <div
-                            key={slot.id}
-                            onClick={() => !slot.isBooked && setSelectedTimeSlot(slot)}
-                            className={`p-3 rounded-md border ${
-                              selectedTimeSlot?.id === slot.id
-                                ? 'border-indigo-500 bg-indigo-50'
-                                : slot.isBooked
-                                ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                                : 'border-gray-200 hover:border-indigo-300 cursor-pointer'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <Clock size={16} className="text-gray-500 mr-2" />
-                                <span className="text-sm">
-                                  {slot.startTime} - {slot.endTime}
-                                </span>
-                              </div>
-                              {slot.isBooked ? (
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Booked</span>
-                              ) : (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Available</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <div className="flex items-center">
+                  <Clock className="h-6 w-6 text-indigo-500 mr-2" />
+                  <p className="text-indigo-800 font-medium">
+                    All bookings will be scheduled for the 9:00 AM - 11:00 AM time slot
+                  </p>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No available time slots for this lab.
-                </div>
-              )}
-              
-              {errors.timeSlot && (
-                <p className="mt-2 text-sm text-red-600">{errors.timeSlot}</p>
-              )}
+              </div>
             </div>
             
             {/* Booking Form */}
@@ -203,7 +179,7 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
               <div className="space-y-6">
                 {/* Date Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-indigo-800 mb-2">
                     Booking Date
                   </label>
                   <div className="relative">
@@ -213,9 +189,9 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
                       max={getMaxDate()}
                       value={bookingDate}
                       onChange={(e) => setBookingDate(e.target.value)}
-                      className={`pl-10 pr-4 py-2 w-full border ${
-                        errors.bookingDate ? 'border-red-500' : 'border-gray-300'
-                      } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                      className={`pl-10 pr-4 py-3 w-full border ${
+                        errors.bookingDate ? 'border-red-500' : 'border-indigo-200'
+                      } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all duration-200`}
                     />
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   </div>
@@ -226,7 +202,7 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
                 
                 {/* Purpose */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-indigo-800 mb-2">
                     Purpose of Booking
                   </label>
                   <textarea
@@ -235,8 +211,8 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
                     className={`w-full border ${
-                      errors.purpose ? 'border-red-500' : 'border-gray-300'
-                    } rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                      errors.purpose ? 'border-red-500' : 'border-indigo-200'
+                    } rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all duration-200`}
                   />
                   {errors.purpose && (
                     <p className="mt-1 text-sm text-red-600">{errors.purpose}</p>
@@ -251,8 +227,8 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
                       checked={agreeToTerms}
                       onChange={(e) => setAgreeToTerms(e.target.checked)}
                       className={`form-checkbox h-5 w-5 ${
-                        errors.agreeToTerms ? 'border-red-500' : 'border-gray-300'
-                      } rounded text-indigo-600 focus:ring-indigo-500 mt-1`}
+                        errors.agreeToTerms ? 'border-red-500' : 'border-indigo-300'
+                      } rounded text-indigo-600 focus:ring-indigo-500 focus:ring-offset-2 mt-1`}
                     />
                     <span className="ml-2 text-sm text-gray-600">
                       I agree to follow lab rules and regulations. I understand that I am responsible for any damage 
@@ -269,14 +245,14 @@ const LabBookingModal = ({ lab, isOpen, onClose, onSubmit }) => {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="mr-3 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500"
+                    className="mr-3 px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
                     disabled={isSubmitting}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all duration-300"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Booking'}

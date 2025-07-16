@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Youtube } from 'lucide-react'
+import cseduLogo from '../../assets/csedu_logo.png'
 
 const Footer = () => {
   return (
@@ -10,9 +11,7 @@ const Footer = () => {
           {/* Department Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">CSE</span>
-              </div>
+              <img src={cseduLogo} alt="CSedu Logo" className="w-10 h-10 rounded-lg" />
               <div>
                 <h3 className="text-lg font-bold">CSEDU</h3>
                 <p className="text-sm text-gray-400">University of Dhaka</p>

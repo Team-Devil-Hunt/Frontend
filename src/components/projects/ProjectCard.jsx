@@ -83,12 +83,12 @@ const ProjectCard = ({ project, onClick }) => {
         }
       default:
         return {
-          bg: 'bg-gray-600',
-          border: 'border-gray-500',
-          text: 'text-gray-700',
-          light: 'bg-gray-50',
-          badge: 'bg-gray-100 text-gray-800 border-gray-200',
-          gradient: 'from-gray-500 to-gray-700'
+          bg: 'bg-orange-600',
+          border: 'border-orange-500',
+          text: 'text-orange-700',
+          light: 'bg-orange-50',
+          badge: 'bg-orange-100 text-orange-800 border-orange-200',
+          gradient: 'from-orange-500 to-orange-700'
         }
     }
   }

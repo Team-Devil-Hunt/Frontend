@@ -355,7 +355,7 @@ const Events = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <motion.section 
-        className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16"
+        className="bg-blue-500 hover:bg-blue-600 transition-colors duration-300 text-white py-16"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}

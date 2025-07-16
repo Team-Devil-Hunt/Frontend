@@ -417,29 +417,49 @@ const Courses = () => {
                         key={course.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
+                        whileHover={{ y: -5 }}
+                        transition={{ duration: 0.2 }}
+                        className="h-full"
                       >
-                        <Card className="h-full flex flex-col hover:shadow-md transition-shadow duration-200">
-                          <CardHeader>
-                            <CardTitle className="flex justify-between items-start">
-                              <span>{course.title}</span>
-                              <Badge variant="outline" className="ml-2 shrink-0">
+                        <Card className="h-full flex flex-col overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 hover:border-blue-100 group relative">
+                          {/* Deep blue left border */}
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-600 to-blue-800"></div>
+                          <CardHeader className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900 p-6 pb-4 pl-8">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-xl font-bold text-blue-900 group-hover:text-blue-800 transition-colors">
+                                {course.title}
+                              </CardTitle>
+                              <Badge className="bg-white text-blue-700 hover:bg-blue-50 transition-colors font-medium border border-blue-200 shadow-sm">
+                                <BookOpen className="h-3.5 w-3.5 mr-1.5" />
                                 {course.courseCode}
                               </Badge>
-                            </CardTitle>
-                            <CardDescription>
-                              {course.department} • {course.level} • Semester {course.semester}
+                            </div>
+                            <CardDescription className="text-blue-700/90 mt-1">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                                <span className="flex items-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-600/80" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                  </svg>
+                                  {course.department}
+                                </span>
+                                <span className="text-blue-400/70">•</span>
+                                <span>{course.level}</span>
+                                <span className="text-blue-400/70">•</span>
+                                <span>Semester {course.semester}</span>
+                              </div>
                             </CardDescription>
                           </CardHeader>
-                          <CardContent className="flex-grow">
-                            <p className="text-gray-600 line-clamp-3">{course.description}</p>
+                          <CardContent className="flex-grow p-6">
+                            <p className="text-gray-600 line-clamp-3 mb-4 leading-relaxed">
+                              {course.description}
+                            </p>
                             
                             <div className="mt-4 flex flex-wrap gap-2">
                               {course.tags.map((tag) => (
                                 <Badge 
                                   key={tag} 
                                   variant="secondary"
-                                  className="cursor-pointer hover:bg-blue-100"
+                                  className="cursor-pointer hover:bg-blue-600 hover:text-white transition-colors duration-200 border border-gray-200 shadow-sm"
                                   onClick={() => handleFilterChange('tag', tag)}
                                 >
                                   {tag}
@@ -447,14 +467,20 @@ const Courses = () => {
                               ))}
                             </div>
                           </CardContent>
-                          <CardFooter className="flex justify-between border-t pt-4">
-                            <div className="text-sm text-gray-600">{course.credits} Credits</div>
+                          <CardFooter className="flex justify-between items-center border-t border-gray-100 bg-gray-50 p-4">
+                            <div className="flex items-center text-sm font-medium text-gray-700">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
+                              </svg>
+                              {course.credits} Credits
+                            </div>
                             <Button 
-                              variant="ghost" 
+                              variant="outline" 
                               size="sm"
+                              className="border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                               onClick={() => setExpandedCourse(expandedCourse === course.id ? null : course.id)}
                             >
-                              View Details
+                              {expandedCourse === course.id ? 'Hide Details' : 'View Details'}
                             </Button>
                           </CardFooter>
                           
@@ -464,24 +490,55 @@ const Courses = () => {
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
-                              className="px-6 pb-6 border-t pt-4"
+                              className="px-6 pb-6 border-t border-gray-100 bg-gray-50"
                             >
-                              <h4 className="font-semibold mb-2">Course Details</h4>
+                              <h4 className="font-semibold text-gray-800 mb-4 text-lg">Course Details</h4>
                               
-                              <div className="space-y-3 text-sm">
-                                <div>
-                                  <span className="font-medium">Instructors:</span> {course.instructors.join(', ')}
+                              <div className="space-y-4 text-sm">
+                                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                                  <div className="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                    </svg>
+                                    <div>
+                                      <h5 className="font-medium text-gray-700 mb-1">Instructors</h5>
+                                      <p className="text-gray-600">{course.instructors.join(', ') || 'Not specified'}</p>
+                                    </div>
+                                  </div>
                                 </div>
                                 
                                 {course.prerequisites.length > 0 && (
-                                  <div>
-                                    <span className="font-medium">Prerequisites:</span> {course.prerequisites.join(', ')}
+                                  <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                                    <div className="flex items-start">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                      </svg>
+                                      <div>
+                                        <h5 className="font-medium text-gray-700 mb-1">Prerequisites</h5>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {course.prerequisites.map((prereq, idx) => (
+                                            <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                                              {prereq}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                                 
-                                <div>
-                                  <span className="font-medium">Syllabus:</span>
-                                  <p className="mt-1 text-gray-600">{course.syllabus}</p>
+                                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                                  <div className="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385V4.804zM11 4.804A7.968 7.968 0 0114.5 4c1.255 0 2.443.29 3.5.804v10A7.969 7.969 0 0014.5 14c-1.669 0-3.218.51-4.5 1.385V4.804z" />
+                                    </svg>
+                                    <div>
+                                      <h5 className="font-medium text-gray-700 mb-2">Syllabus</h5>
+                                      <p className="text-gray-600 leading-relaxed">
+                                        {course.syllabus || 'No syllabus available.'}
+                                      </p>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </motion.div>
@@ -505,24 +562,38 @@ const Courses = () => {
                         <Accordion 
                           type="single" 
                           collapsible
-                          className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                          className="bg-white rounded-lg border border-gray-100 hover:shadow-lg transition-all duration-300 hover:border-blue-100 relative overflow-hidden"
                         >
+                          {/* Blue accent border */}
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-600 to-blue-800"></div>
                           <AccordionItem value={course.id} className="border-none">
-                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                            <AccordionTrigger className="px-6 py-5 hover:no-underline pl-8">
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full text-left">
                                 <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold">{course.title}</span>
-                                    <Badge variant="outline">{course.courseCode}</Badge>
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-bold text-gray-900">{course.title}</span>
+                                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 transition-colors">
+                                      <BookOpen className="h-3 w-3 mr-1.5" />
+                                      {course.courseCode}
+                                    </Badge>
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {course.department} • {course.level} • Semester {course.semester}
-                                  </p>
+                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 mt-1.5">
+                                    <span className="flex items-center">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                      </svg>
+                                      {course.department}
+                                    </span>
+                                    <span className="text-gray-400">•</span>
+                                    <span>{course.level}</span>
+                                    <span className="text-gray-400">•</span>
+                                    <span>Semester {course.semester}</span>
+                                  </div>
                                 </div>
                                 <div className="mt-2 sm:mt-0 text-sm text-gray-600">{course.credits} Credits</div>
                               </div>
                             </AccordionTrigger>
-                            <AccordionContent className="px-6 pb-4">
+                            <AccordionContent className="px-6 pb-6 pt-2 bg-gray-50">
                               <div className="space-y-4">
                                 <div>
                                   <h4 className="font-medium mb-2">Description</h4>
